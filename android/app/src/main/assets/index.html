@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>KPSS Lisans Akıllı Anki Kartları & PDF Soru Çıkarıcı</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swa p" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .perspective-1000 {
+      perspective: 1200px;
+    }
+    .flip-card-inner {
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+    .flip-card-front, .flip-card-back {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .flip-card-back {
+      transform: rotateY(180deg);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+  <!-- Üst Navigasyon Barı -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
+          KPSS
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">KPSS Lisans Anki & PDF Kart Stüdyosu</h1>
+          <p class="text-xs text-slate-500">KPSS Lisans Genel Kültür & Genel Yetenek (GK-GY) • Tam Kapsamlı PDF Soru-Cevap Çıkarıcı</p>
+        </div>
+      </div>
+      <!-- Hızlı İstatistik Rozetleri -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          <span>Toplam Kart:</span>
+          <span id="statTotalCards" class="font-bold text-slate-900">0</span>
+        </div>
+        <button id="quickMissedBadgeBtn" type="button" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition">
+          <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          <span>Bilemediklerim:</span>
+          <span id="statMissedCards" class="font-bold text-rose-800">0</span>
+        </button>
+        <div class="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Öğrenilen:</span>
+          <span id="statMasteredCards" class="font-bold text-emerald-800">0</span>
+        </div>
+        <button id="backupModalBtn" type="button" class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          <span>Yedekle / Yükle</span>
+        </button>
+      </div>
+    </div>
+    <!-- Sekme Menüsü -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto border-t border-slate-100 bg-slate-50/60">
+      <button type="button" data-tab="study" class="nav-tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        <span>Kartlarla Çalış (Anki)</span>
+      </button>
+      <button type="button" data-tab="pdf" class="nav-tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>PDF'den Kart Üret (Tam Kapsamlı)</span>
+      </button>
+      <button type="button" data-tab="missed" class="nav-tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <span>Bilemediklerim & Eksik Analizi</span>
+        <span id="navMissedCount" class="ml-1 px-1.5 py-0.5 text-[11px] rounded-full bg-rose-100 text-rose-700 font-bold">0</span>
+      </button>
+      <button type="button" data-tab="manual" class="nav-tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        <span>Manuel Kart Ekle</span>
+      </button>
+      <button type="button" data-tab="library" class="nav-tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <span>Ders & Konu Arşivi</span>
+      </button>
+    </div>
+  </header>
+  <!-- Ana İçerik Alanı -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+    <!-- Bildirim Toast -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+    <!-- ================= 1. SEKME: KARTLARLA ÇALIŞ (ANKİ MODU) ================= -->
+    <section id="tab-study" class="tab-panel space-y-6">
+      <!-- Filtre ve Çalışma Modu Seçici -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+          <div>
+            <label for="studyCourseFilter" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Ders Seçimi</label>
+            <select id="studyCourseFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ALL">Tüm Dersler</option>
+            </select>
+          </div>
+          <div>
+            <label for="studyTopicFilter" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Konu Seçimi</label>
+            <select id="studyTopicFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ALL">Tüm Konular</option>
+            </select>
+          </div>
+          <div>
+            <label for="studyStatusFilter" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Kart Grubu / Filtre</label>
+            <select id="studyStatusFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ALL">Tüm Kartlar (Sıralı / Karışık)</option>
+              <option value="MISSED">Sadece Bilemediklerim (Eksiklerim)</option>
+              <option value="UNSEEN">Henüz Çalışılmamış Yeni Kartlar</option>
+              <option value="REVIEW">Zorlandıklarım & Tekrar Bekleyenler</option>
+              <option value="MASTERED">Öğrendiklerim (Pekiştirme)</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="shuffleDeckBtn" type="button" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Karıştır</span>
+            </button>
+            <button id="studyOnlyMissedQuickBtn" type="button" class="flex-1 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
+              <span>Bilemediklerimi Çalış</span>
+            </button>
+          </div>
+        </div>
+        <!-- İlerleme Çubuğu -->
+        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+          <div class="flex items-center gap-2">
+            <span id="studyDeckSummary" class="font-semibold text-slate-800">Deste yükleniyor...</span>
+            <span id="studySourceBadge" class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-medium hidden"></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span>Klavye Kısayolları: <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded text-[11px]">Boşluk</kbd> Çevir • <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded text-[11px]">1</kbd> Bilemedim • <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded text-[11px]">2</kbd> Zor • <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded text-[11px]">3</kbd> Bildim</span>
+          </div>
+        </div>
+        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2">
+          <div id="studyProgressBar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+      <!-- Anki Kart Sahnesi -->
+      <div id="studyStageContainer" class="max-w-4xl mx-auto">
+        <!-- Boş Durum -->
+        <div id="studyEmptyState" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-sm">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Seçili Filtrede Kart Bulunamadı</h3>
+          <p class="text-sm text-slate-600 max-w-md mx-auto mb-6">Filtreyi değiştirebilir, yeni bir KPSS ders PDF'i yükleyerek tüm ayrıntılardan otomatik soru-cevap kartları üretebilir veya manuel kart ekleyebilirsiniz.</p>
+          <div class="flex flex-wrap justify-center gap-3">
+            <button id="emptyResetFilterBtn" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold transition">Tüm Kartları Göster</button>
+            <button id="emptyGoPdfBtn" type="button" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">PDF'den Kart Üret</button>
+          </div>
+        </div>
+        <!-- Aktif Kart -->
+        <div id="studyActiveCardWrap" class="space-y-4">
+          <div id="flashcardBox" class="bg-white rounded-3xl border-2 border-slate-200 shadow-md overflow-hidden transition-all duration-300">
+            <!-- Kart Üst Bilgi Çubuğu -->
+            <div class="px-5 sm:px-7 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span id="cardCourseBadge" class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 text-xs font-bold">Tarih</span>
+                <span id="cardTopicBadge" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-semibold">Kurtuluş Savaşı</span>
+                <span id="cardSourceLabel" class="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">PDF</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="cardStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">Yeni Kart</span>
+                <button id="editCurrentCardBtn" type="button" class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition" title="Bu Kartı Düzenle">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+              </div>
+            </div>
+            <!-- ÖN YÜZ: SORU ALANI -->
+            <div class="p-6 sm:p-8">
+              <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-indigo-600">
+                  <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                  KARTIN ÖN YÜZÜ — SORU
+                </span>
+                <span id="cardCounterLabel" class="text-xs font-bold text-slate-400">1 / 10</span>
+              </div>
+              <div id="cardQuestionText" class="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed min-h-[72px] flex items-center">
+                Soru yükleniyor...
+              </div>
+              <!-- Cevabı Göster Butonu (Arka yüz kapalıyken görünür) -->
+              <div id="revealAnswerPrompt" class="mt-8 pt-6 border-t border-dashed border-slate-200 flex flex-col items-center justify-center">
+                <button id="revealAnswerBtn" type="button" class="w-full sm:w-auto min-w-[260px] px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm hover:shadow transition flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  <span>Cevabı ve Konu Açıklamasını Göster</span>
+                </button>
+                <p class="text-[11px] text-slate-400 mt-2">Önce cevabı zihninizde canlandırın, ardından kartın arkasını açın.</p>
+              </div>
+              <!-- ARKA YÜZ: CEVAP + ALTINDA KONU BÖLÜMÜ GENİŞ AÇIKLAMASI -->
+              <div id="cardBackSection" class="hidden mt-6 pt-6 border-t-2 border-indigo-100 space-y-5">
+                <!-- CEVAP KARTI -->
+                <div class="rounded-2xl bg-emerald-50/90 border border-emerald-200 p-5">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+                      <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      KARTIN ARKA YÜZÜ — DOĞRU CEVAP
+                    </span>
+                    <span id="cardKeyTermBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900"></span>
+                  </div>
+                  <div id="cardAnswerText" class="text-base sm:text-lg font-bold text-emerald-950 leading-relaxed">
+                    Cevap yükleniyor...
+                  </div>
+                </div>
+                <!-- CEVABIN ALTINDAKİ KONU BÖLÜMÜ GENİŞ AÇIKLAMASI -->
+                <div class="rounded-2xl bg-amber-50/80 border border-amber-200/90 p-5">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-amber-900">
+                      <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      KONU BÖLÜMÜ GENİŞ AÇIKLAMASI & PDF BAĞLAMI
+                    </span>
+                    <span id="cardSectionRefBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-900">Konu Özeti</span>
+                  </div>
+                  <div id="cardExplanationText" class="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+                    Açıklama yükleniyor...
+                  </div>
+                </div>
+                <!-- ANKİ DEĞERLENDİRME BUTONLARI -->
+                <div class="pt-2">
+                  <p class="text-xs font-bold uppercase tracking-wider text-center text-slate-500 mb-3">Bu soruyu nasıl yanıtladınız? (Bilemedikleriniz otomatik olarak Eksiklerim listesine kaydedilir)</p>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button id="rateMissedBtn" type="button" class="px-4 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm transition flex flex-col items-center justify-center">
+                      <span class="text-base">1 • Bilemedim / Yanlış</span>
+                      <span class="text-[11px] font-normal text-rose-100 mt-0.5">"Bilemediklerim" bölümüne eklenir</span>
+                    </button>
+                    <button id="rateHardBtn" type="button" class="px-4 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-sm transition flex flex-col items-center justify-center">
+                      <span class="text-base">2 • Zorlandım / Kısmen</span>
+                      <span class="text-[11px] font-normal text-amber-100 mt-0.5">Tekrar listesinde tutulur</span>
+                    </button>
+                    <button id="rateGoodBtn" type="button" class="px-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition flex flex-col items-center justify-center">
+                      <span class="text-base">3 • Bildim / Öğrendim</span>
+                      <span class="text-[11px] font-normal text-emerald-100 mt-0.5">Öğrenildi işaretlenir (Eksiklerden çıkar)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Alt Gezinti Çubuğu -->
+            <div class="px-5 sm:px-7 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <button id="prevCardBtn" type="button" class="px-3.5 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                <span>← Önceki Kart</span>
+              </button>
+              <span id="cardHistoryStats" class="text-xs text-slate-500 font-medium">Doğru: 0 • Bilemedim: 0</span>
+              <button id="nextCardBtn" type="button" class="px-3.5 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                <span>Sonraki Kart →</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ================= 2. SEKME: PDF'DEN KART ÜRET (HİÇBİR AYRINTIYI ATLAMADAN) ================= -->
+    <section id="tab-pdf" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
+          <div>
+            <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wide">%100 Cümle ve Ayrıntı Tarama Motoru</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-1">PDF Ders Notundan Hiçbir Ayrıntıyı Atlamadan Kart Oluştur</h2>
+            <p class="text-sm text-slate-600 mt-1">Yüklediğiniz PDF'deki yalnızca kendi ders konularınız taranır. Her cümle, madde, tarih, kavram, ilke ve dipnot ayrıntısı tek tek soru-cevap kartına dönüştürülür; kartın arkasına o cümlenin geçtiği konu bölümünün geniş açıklaması eklenir.</p>
+          </div>
+          <button id="loadSampleKpssPdfTextBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition">
+            Örnek KPSS Ders Metni Doldur (Test Et)
+          </button>
+        </div>
+        <!-- Adım 1: Ders ve Konu Sınıflandırması -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+          <div>
+            <label for="pdfCourseSelect" class="block text-xs font-bold uppercase text-slate-600 mb-1">1. Ders Adı Seçin veya Ekleyin</label>
+            <div class="flex gap-2">
+              <select id="pdfCourseSelect" class="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"></select>
+              <button id="pdfNewCourseToggleBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold" title="Yeni Ders Ekle">+Ders</button>
+            </div>
+            <div id="pdfNewCourseBox" class="hidden mt-2 flex gap-2">
+              <input id="pdfNewCourseInput" type="text" placeholder="GK-GY alt dersi (Örn: Sözel Mantık)" class="flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-sm" />
+              <button id="pdfSaveNewCourseBtn" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold">Ekle</button>
+            </div>
+          </div>
+          <div>
+            <label for="pdfTopicInput" class="block text-xs font-bold uppercase text-slate-600 mb-1">2. Konu / Ünite Adı</label>
+            <input id="pdfTopicInput" type="text" list="existingTopicsDatalist" placeholder="Örn:1982 Anayasası Temel Haklar / Osmanlı Kültür ve Medeniyeti" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800" />
+            <datalist id="existingTopicsDatalist"></datalist>
+          </div>
+          <div>
+            <label for="pdfDetailModeSelect" class="block text-xs font-bold uppercase text-slate-600 mb-1">3. Ayrıntı Çıkarma Hassasiyeti</label>
+            <select id="pdfDetailModeSelect" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+              <option value="EXHAUSTIVE">Tam Kapsamlı (Hiçbir Cümleyi ve Ayrıntıyı Atlama -%100)</option>
+              <option value="CLAUSE_AND_SENTENCE">Maksimum Yoğunluk (Her Cümle + Her Liste Maddesi Ayrı Kart)</option>
+            </select>
+          </div>
+        </div>
+        <!-- Adım 2: PDF Dosyası Yükleme veya Metin Yapıştırma -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- PDF Yükleme Kutusu -->
+          <div id="pdfDropZone" class="flex flex-col justify-between rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/40 p-5 text-center transition">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto mb-3 shadow-sm">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">KPSS Ders Konusu PDF Dosyası Yükle</h3>
+              <p class="text-xs text-slate-600 mt-1 mb-3">Telefonunuzdan veya bilgisayarınızdan PDF (.pdf) / Metin (.txt) dosyanızı seçin veya aşağıdan panodaki PDF metninizi tek tıkla yapıştırın.</p>
+              <!-- Mobil ve Masaüstü Uyumlu PDF Yükleme Tetikleyicisi -->
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                <button id="triggerPdfUploadBtn" type="button" class="cursor-pointer w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold shadow-md transition inline-flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                  <span>PDF Dosyası Seç</span>
+                </button>
+              </div>
+              <input id="pdfFileInput" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" class="sr-only" />
+              <!-- Mobil Önizleme İçin Hızlı Yapıştır ve Hazır GK-GY Konu Yükleyici -->
+              <div class="mt-3 pt-3 border-t border-indigo-200/60 space-y-2">
+                <p class="text-[11px] text-slate-600 leading-snug">
+                  <strong>Mobil İpucu:</strong> Uygulama içi önizleme ekranı dosya seçiciyi kısıtlarsa, PDF metninizi kopyalayıp <strong>Panodan Metin Yapıştır</strong> butonuna basabilir veya PDF dosyanızı doğrudan sohbet ekranına yükleyebilirsiniz.
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                  <button id="pasteClipboardTextBtn" type="button" class="px-3.5 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-indigo-300 text-indigo-700 text-xs font-bold shadow-sm transition inline-flex items-center gap-1.5">
+                    <span>📋 Panodan PDF Metni Yapıştır</span>
+                  </button>
+                  <select id="quickGkGyPresetSelect" class="rounded-xl border border-indigo-300 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+                    <option value="">📚 Hazır GK-GY PDF Notu Seç...</option>
+                    <option value="TARIH_INKILAP">Tarih: Kurtuluş Savaşı ve Kongreler</option>
+                    <option value="TARIH_OSMANLI">Tarih: Osmanlı Kültür ve Medeniyeti</option>
+                    <option value="COGRAFYA_IKLIM">Coğrafya: Türkiye'nin İklimi ve Yer Şekilleri</option>
+                    <option value="VATANDASLIK_YURUTME">Vatandaşlık: 1982 Anayasası Temel İlkeler & Yürütme</option>
+                    <option value="TURKCE_DILBILGISI">Türkçe: Sözcükte Yapı ve Ses Bilgisi</option>
+                    <option value="MATEMATIK_SAYILAR">Matematik: Temel Kavramlar ve Bölünebilme</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div id="pdfExtractionStatusBox" class="mt-4 pt-3 border-t border-indigo-200/60 text-left hidden">
+              <div class="flex items-center justify-between text-xs font-semibold text-indigo-900">
+                <span id="pdfFileNameLabel">dosya.pdf</span>
+                <span id="pdfPageCountLabel">0 Sayfa</span>
+              </div>
+              <div class="w-full h-2 bg-indigo-100 rounded-full overflow-hidden mt-1.5">
+                <div id="pdfReadProgressBar" class="h-full bg-indigo-600 transition-all" style="width:0%"></div>
+              </div>
+              <p id="pdfExtractionStepText" class="text-[11px] text-indigo-700 mt-1">Okunuyor...</p>
+            </div>
+          </div>
+          <!-- Okunan / Yapıştırılan PDF Metni Önizleme ve Düzenleme -->
+          <div class="flex flex-col">
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="pdfRawTextInput" class="text-xs font-bold uppercase text-slate-600">PDF'den Çıkarılan / İşlenecek Ders Konusu Metni</label>
+              <button id="clearPdfTextBtn" type="button" class="text-xs text-slate-500 hover:text-rose-600 font-semibold">Metni Temizle</button>
+            </div>
+            <textarea id="pdfRawTextInput" rows="8" placeholder="PDF yüklediğinizde içindeki tüm metin otomatik olarak buraya aktarılır. İsterseniz doğrudan PDF'den kopyaladığınız ders notlarını da buraya yapıştırabilirsiniz..." class="w-full flex-1 rounded-2xl border border-slate-300 p-3.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          </div>
+        </div>
+        <!-- Üretim Butonu -->
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
+          <div class="text-xs text-slate-600">
+            <span class="font-bold text-slate-800">Not:</span> Yalnızca yukarıdaki PDF metninde yer alan bilgilerden soru-cevap üretilir; dışarıdan alakasız bilgi eklenmez.
+          </div>
+          <button id="generateCardsFromPdfBtn" type="button" class="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span>Hiçbir Ayrıntıyı Atlamadan Kartları Oluştur ve Kaydet</span>
+          </button>
+        </div>
+      </div>
+      <!-- Üretilen Kartların Önizlemesi ve Kapsama Raporu -->
+      <div id="pdfGeneratedPreviewPanel" class="hidden bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">Tamamlandı • %100 Ayrıntı Kapsaması</span>
+            <h3 id="pdfPreviewTitle" class="text-lg font-bold text-slate-900 mt-1">Üretilen Kartlar</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="startStudyGeneratedBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition">
+              Bu Konuyu Hemen Çalışmaya Başla →
+            </button>
+          </div>
+        </div>
+        <div id="pdfGeneratedListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1"></div>
+      </div>
+    </section>
+    <!-- ================= 3. SEKME: BİLEMEDİKLERİM & EKSİK ANALİZİ ================= -->
+    <section id="tab-missed" class="tab-panel hidden space-y-6">
+      <!-- Üst Özet ve Eksik Analizi -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <span class="px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 text-xs font-bold uppercase tracking-wide">Eksik Takip & Tekrar Sistemi</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-1">Bilemediklerim ve Konu Bazlı Eksiklik Raporu</h2>
+            <p class="text-sm text-slate-600 mt-1">Çalışırken "Bilemedim" dediğiniz tüm kartlar burada toplanır. Hangi dersin hangi konusunda eksiğiniz olduğunu görebilir ve sadece bilemediğiniz kartlarla özel tekrar yapabilirsiniz.</p>
+          </div>
+          <button id="practiceAllMissedBtn" type="button" class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Sadece Bilemediklerimi Tekrar Et</span>
+          </button>
+        </div>
+        <!-- Ders ve Konu Bazlı Eksiklik Dağılımı -->
+        <div class="mt-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Ders & Konu Bazlı Eksiklik Haritası</h3>
+          <div id="weaknessBreakdownGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+      </div>
+      <!-- Bilemediklerim Kart Listesi -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 class="text-base font-bold text-slate-900">Bilemediğim Kartlar Listesi</h3>
+          <div class="flex items-center gap-2">
+            <select id="missedCourseFilter" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800">
+              <option value="ALL">Tüm Dersler</option>
+            </select>
+          </div>
+        </div>
+        <div id="missedCardsListContainer" class="space-y-3"></div>
+      </div>
+    </section>
+    <!-- ================= 4. SEKME: MANUEL KART EKLE ================= -->
+    <section id="tab-manual" class="tab-panel hidden">
+      <div class="max-w-3xl mx-auto bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wide">Özel Kart Oluşturucu</span>
+        <h2 id="manualFormHeading" class="text-xl font-bold text-slate-900 mt-1">Manuel Soru-Cevap ve Konu Açıklaması Kartı Ekle</h2>
+        <p class="text-sm text-slate-600 mt-1 mb-5">PDF'den üretilen kartların yanı sıra kendi notlarınızı, deneme sınavlarında gördüğünüz önemli soruları ve detaylı konu açıklamalarını buraya ekleyebilirsiniz.</p>
+        <form id="manualCardForm" class="space-y-4">
+          <input type="hidden" id="editingCardIdInput" value="" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="manualCourseSelect" class="block text-xs font-bold uppercase text-slate-600 mb-1">Ders Adı</label>
+              <select id="manualCourseSelect" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800"></select>
+            </div>
+            <div>
+              <label for="manualTopicInput" class="block text-xs font-bold uppercase text-slate-600 mb-1">Konu Adı</label>
+              <input id="manualTopicInput" type="text" list="existingTopicsDatalist" required placeholder="Örn: İslamiyet Öncesi Türk Tarihi" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-800" />
+            </div>
+          </div>
+          <div>
+            <label for="manualQuestionInput" class="block text-xs font-bold uppercase text-slate-600 mb-1">Kartın Ön Yüzü: Soru</label>
+            <textarea id="manualQuestionInput" rows="3" required placeholder="Soruyu buraya yazın..." class="w-full rounded-xl border border-slate-300 p-3 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+          </div>
+          <div>
+            <label for="manualAnswerInput" class="block text-xs font-bold uppercase text-emerald-700 mb-1">Kartın Arka Yüzü (Üst): Kısa ve Net Cevap</label>
+            <textarea id="manualAnswerInput" rows="2" required placeholder="Doğru cevabı buraya yazın..." class="w-full rounded-xl border border-emerald-300 bg-emerald-50/30 p-3 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+          </div>
+          <div>
+            <label for="manualExplanationInput" class="block text-xs font-bold uppercase text-amber-800 mb-1">Kartın Arka Yüzü (Alt): Konu Bölümü Geniş Açıklaması</label>
+            <textarea id="manualExplanationInput" rows="4" required placeholder="Cevabın ait olduğu konu bölümüyle ilgili geniş açıklamayı, ilişkili maddeleri ve önemli KPSS ayrıntılarını buraya yazın..." class="w-full rounded-xl border border-amber-300 bg-amber-50/30 p-3 text-sm text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+            <button id="cancelEditCardBtn" type="button" class="hidden px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold">Düzenlemeyi İptal Et</button>
+            <button type="submit" id="saveManualCardBtn" class="ml-auto px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition">
+              Kartı Kaydet
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+    <!-- ================= 5. SEKME: DERS & KONU ARŞİVİ ================= -->
+    <section id="tab-library" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Ders ve Konu Sınıflandırma Arşivi</h2>
+            <p class="text-sm text-slate-600 mt-0.5">Tüm KPSS derslerinizi, konularınızı ve kayıtlı soru-cevap kartlarınızı buradan yönetebilir, arayabilir veya silebilirsiniz.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="libraryNewCourseInput" type="text" placeholder="GK-GY Alt Dersi Ekle (Örn:Geometri)" class="rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm" />
+            <button id="libraryAddCourseBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition">+ Ders Ekle</button>
+          </div>
+        </div>
+        <!-- Arama ve Filtre -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+          <input id="librarySearchInput" type="text" placeholder="Soru, cevap veya konu açıklamasında ara..." class="rounded-xl border border-slate-300 px-3.5 py-2 text-sm" />
+          <select id="libraryCourseFilter" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium">
+            <option value="ALL">Tüm Dersler</option>
+          </select>
+          <select id="libraryTopicFilter" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium">
+            <option value="ALL">Tüm Konular</option>
+          </select>
+        </div>
+        <!-- Ders ve Konu Klasör Özeti -->
+        <div id="courseTopicFoldersGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6"></div>
+        <!-- Kart Listesi -->
+        <div id="libraryCardsList" class="space-y-3"></div>
+      </div>
+    </section>
+  </main>
+  <!-- PDF Dosyası Seç & Mobil Yükleme Merkezi Modalı -->
+  <div id="pdfPickerModal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-auto">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+        <div>
+          <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold uppercase">PDF & Ders Notu Aktarım Merkezi</span>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900 mt-1">KPSS Ders Konusu Yükle</h3>
+        </div>
+        <button id="closePdfPickerModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-lg font-bold">&times;</button>
+      </div>
+      <!-- Yöntem 1: Doğrudan Cihaz Dosya Seçici -->
+      <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase text-indigo-900">1. Yöntem: Cihazdan PDF / TXT Dosyası Seç</span>
+          <span class="text-[11px] font-semibold text-indigo-700">Chrome & PC</span>
+        </div>
+        <p class="text-xs text-slate-600">Bilgisayar veya Chrome tarayıcıda aşağıdaki kutudan PDF seçebilirsiniz:</p>
+        <input id="modalNativeFileInput" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" class="block w-full text-xs text-slate-700 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 bg-white rounded-xl border border-indigo-200 p-1.5 cursor-pointer" />
+        <div id="webviewFileBlockedAlert" class="hidden p-3 rounded-xl bg-rose-600 text-white text-xs space-y-1.5 shadow-md">
+          <div class="font-extrabold uppercase tracking-wide flex items-center gap-1.5">
+            <span>⚠️ Mobil Önizleme Dosya Yöneticisini Engelledi!</span>
+          </div>
+          <p class="leading-relaxed text-rose-50">
+            Kullandığınız mobil uygulamanın <strong>"Önizleme"</strong> penceresi güvenlik nedeniyle telefonunuzun dosya yöneticisine erişime izin vermiyor. PDF'inizi yüklemek için şu <strong>2 kesin yoldan birini</strong> kullanın:
+          </p>
+          <ul class="list-disc list-inside space-y-1 font-semibold text-white">
+            <li><strong>Çözüm A (PDF Dosyasını Sohbete Gönderin):</strong> Sol üstteki <strong>&lt;</strong> okuyla önizlemeden çıkıp, tıpkı ekran görüntüsü gönderdiğiniz gibi sohbet ekranındaki <strong>+</strong> butonundan PDF dosyanızı doğrudan sohbete gönderin; tüm sayfalarını uygulamaya ekleyeyim!</li>
+            <li><strong>Çözüm B (Metni Aşağıya Yapıştırın):</strong> PDF'inizdeki metni kopyalayıp hemen aşağıdaki yeşil kutuya yapıştırın.</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Yöntem 2: PDF Metnini Doğrudan Buraya Yapıştır -->
+      <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase text-emerald-900">2. Yöntem: PDF Metnini Buraya Yapıştır (Mobil Uyumlu)</span>
+          <button id="modalPasteClipboardBtn" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold">Panodan Yapıştır</button>
+        </div>
+        <textarea id="modalDirectTextInput" rows="4" placeholder="PDF okuyucunuzdan kopyaladığınız ders konusu metnini buraya basılı tutarak yapıştırın..." class="w-full rounded-xl border border-emerald-300 bg-white p-3 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+        <button id="modalApplyTextAndGenerateBtn" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm transition">
+          Bu Metinden Hiçbir Ayrıntıyı Atlamadan Kartları Üret →
+        </button>
+      </div>
+      <!-- Yöntem 3: Hazır KPSS Lisans GK-GY Ders Konusu Seç -->
+      <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+        <span class="text-xs font-extrabold uppercase text-slate-700 block">3. Yöntem: Hazır KPSS Lisans GK-GY Ders Notu Yükle</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button type="button" data-modal-preset="TARIH_INKILAP" class="modal-preset-btn text-left px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 text-xs font-semibold text-slate-800 transition">📘 Tarih: Kurtuluş Savaşı & Kongreler</button>
+          <button type="button" data-modal-preset="TARIH_OSMANLI" class="modal-preset-btn text-left px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 text-xs font-semibold text-slate-800 transition">📘 Tarih: Osmanlı Kültür & Medeniyeti</button>
+          <button type="button" data-modal-preset="COGRAFYA_IKLIM" class="modal-preset-btn text-left px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 text-xs font-semibold text-slate-800 transition">🌍 Coğrafya: Türkiye İklimi & Yer Şekilleri</button>
+          <button type="button" data-modal-preset="VATANDASLIK_YURUTME" class="modal-preset-btn text-left px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 text-xs font-semibold text-slate-800 transition">⚖️ Vatandaşlık: 1982 Anayasası & Yürütme</button>
+          <button type="button" data-modal-preset="TURKCE_DILBILGISI" class="modal-preset-btn text-left px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 text-xs font-semibold text-slate-800 transition">📝 Türkçe: Ses Bilgisi &Sözcükte Yapı</button>
+          <button type="button" data-modal-preset="MATEMATIK_SAYILAR" class="modal-preset-btn text-left px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 text-xs font-semibold text-slate-800 transition">🔢 Matematik: Temel Kavramlar & Bölünebilme</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Yedekleme / İçe Aktarma Modalı -->
+  <div id="backupModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-900">Verileri Yedekle / Geri Yükle</h3>
+        <button id="closeBackupModalBtn" type="button" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-600">Tüm kartlarınız, PDF'den çıkarılan sorularınız ve "Bilemediklerim" kayıtlarınız tarayıcınıza otomatik kaydedilir. Ayrıca JSON dosyası olarak bilgisayarınıza indirebilir veya geri yükleyebilirsiniz.</p>
+      <div class="flex flex-wrap gap-3">
+        <button id="exportJsonBtn" type="button" class="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition">
+          Yedeği İndir (.json)
+        </button>
+        <label class="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold transition text-center cursor-pointer">
+          <span>Yedek Dosyası Yükle</span>
+          <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </div>
+  <script>
+    // PDF.js Worker Ayarı
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc ='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const STORAGE_KEY = 'kpss_lisans_anki_studio_v1';
+    // Varsayılan KPSS Lisans Dersleri ve Örnek Başlangıç Kartları
+    const DEFAULT_COURSES = [
+      'Türkçe',
+      'Matematik',
+      'Geometri',
+      'Tarih',
+      'Coğrafya',
+      'Vatandaşlık (Anayasa)',
+      'Güncel Bilgiler'
+    ];
+    const EXCLUDED_NON_GKGY_COURSES = new Set([
+      'Eğitim Bilimleri',
+      'Kamu Yönetimi',
+      'Hukuk',
+      'İktisat',
+      'Maliye',
+      'Muhasebe'
+    ]);
+    const INITIAL_SAMPLE_CARDS = [
+      {
+        id: 'sample-1',
+        course: 'Tarih',
+        topic: 'Kurtuluş Savaşı Hazırlık Dönemi',
+        question: 'Milli sınırlar içinde vatan bir bütündür, parçalanamaz ilkesi ilk kez hangi belgede yer almıştır?',
+        answer: 'Erzurum Kongresi Kararları (23 Temmuz - 7 Ağustos 1919)',
+        explanation: 'Erzurum Kongresi Bölüm Açıklaması:\nDoğu Anadolu Müdafaa-i Hukuk Cemiyeti ve Trabzon Muhafaza-i Hukuk-ı Milliye Cemiyeti tarafından toplanan Erzurum Kongresi toplanış bakımından bölgesel, aldığı kararlar bakımından ulusaldır. Kongrede ilk kez "Milli sınırlar içinde vatan bir bütündür, parçalanamaz" maddesi kabul edilmiş, manda ve himaye ilk kez reddedilmiş ve Temsil Heyeti 9 kişilik bir kurul olarak oluşturulmuştur.',
+        source: 'Örnek KPSS PDF Notu - Sayfa 1',
+        status: 'unseen', // 'unseen' | 'missed' | 'hard' | 'mastered'
+        missedCount: 0,
+        correctCount: 0,
+        createdAt: 1700000001000
+      },
+      {
+        id: 'sample-2',
+        course: 'Vatandaşlık (Anayasa)',
+        topic: '1982 Anayasası Yasama Organı',
+        question: '1982 Anayasası’na göre Türkiye Büyük Millet Meclisi (TBMM) ve Cumhurbaşkanlığı seçimleri kaç yılda bir birlikte yapılır?',
+        answer: '5 yılda bir aynı gün birlikte yapılır.',
+        explanation: '1982 Anayasası Yasama Dönemi Bölüm Açıklaması:\n2017 Anayasa değişikliği ile birlikte TBMM genel seçimleri ve Cumhurbaşkanlığı seçimleri 5 yılda bir aynı günde yapılır. TBMM üye tamsayısı 600 milletvekilinden oluşur. Milletvekili seçilebilme yaşı 18’dir. Süresi biten milletvekili yeniden seçilebilir.',
+        source: 'Örnek KPSS PDF Notu - Sayfa 1',
+        status: 'unseen',
+        missedCount: 0,
+        correctCount: 0,
+        createdAt: 1700000002000
+      },
+      {
+        id: 'sample-3',
+        course: 'Coğrafya',
+        topic: 'Türkiye’nin Coğrafi Konumu',
+        question: 'Türkiye’nin 36°-42° Kuzey paralelleri ile 26°-45° Doğu meridyenleri arasında yer almasının temel sonuçları hangi kavramla ifade edilir?',
+        answer: 'Mutlak (Matematik) Konum sonuçları olarak ifade edilir.',
+        explanation: 'Türkiye’nin Coğrafi Konumu Bölüm Açıklaması:\nEkvator ve Başlangıç Meridyeni’ne (Greenwich) göre belirlenen konuma Mutlak (Matematik) Konum denir. Türkiye’nin Orta Kuşak’ta yer alması, dört mevsimin belirgin yaşanması, cephesel yağışların görülmesi, güneyden kuzeye gidildikçe güneş ışınlarının geliş açısının daralması ve en doğusu ile en batısı arasında 76 dakikalık (19 meridyen x 4 dk) yerel saat farkı bulunması mutlak konumunun doğrudan sonuçlarıdır.',
+        source: 'Örnek KPSS PDF Notu - Sayfa 1',
+        status: 'unseen',
+        missedCount: 0,
+        correctCount: 0,
+        createdAt: 1700000003000
+      }
+    ];
+    // Uygulama Durumu (State)
+    let state = {
+      courses: [...DEFAULT_COURSES],
+      cards: [...INITIAL_SAMPLE_CARDS],
+      activeTab: 'study',
+      studyFilter: {
+        course: 'ALL',
+        topic: 'ALL',
+        status: 'ALL'
+      },
+      studyDeckIds: [],
+      currentCardIndex: 0,
+      isBackRevealed: false
+    };
+    // Güvenli LocalStorage Kayıt ve Okuma
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.courses) && parsed.courses.length > 0) {
+            const filteredCourses = parsed.courses.filter(c => !EXCLUDED_NON_GKGY_COURSES.has(c));
+            state.courses = filteredCourses.length > 0 ? filteredCourses : [...DEFAULT_COURSES];
+            DEFAULT_COURSES.forEach(dc => {
+              if (!state.courses.includes(dc)) state.courses.push(dc);
+            });
+          }
+          if (Array.isArray(parsed.cards)) {
+            state.cards = parsed.cards;
+          }
+        }
+      } catch (e) {
+        // Sandbox localStorage erişim hatası olursa bellek içi çalışmaya devam eder
+      }
+    }
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          courses: state.courses,
+          cards: state.cards
+        }));
+      } catch (e) {
+        // Ignore storage quota or sandbox errors
+      }
+    }
+    // Bildirim Gösterici
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const colors = {
+        info: 'bg-slate-900 text-white border-slate-700',
+        success: 'bg-emerald-600 text-white border-emerald-500',
+        danger: 'bg-rose-600 text-white border-rose-500'
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-lg text-xs sm:text-sm font-semibold transition-all duration-300 ${colors[type] || colors.info}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 3200);
+    }
+    // Sekme Değiştirme
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== `tab-${tabId}`);
+      });
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        const isActive = btn.getAttribute('data-tab') === tabId;
+        btn.classList.toggle('border-indigo-600', isActive);
+        btn.classList.toggle('text-indigo-600', isActive);
+        btn.classList.toggle('border-transparent', !isActive);
+        btn.classList.toggle('text-slate-600', !isActive);
+      });
+      if (tabId === 'study') {
+        rebuildStudyDeck(false);
+      } else if (tabId === 'missed') {
+        renderMissedTab();
+      } else if (tabId === 'library') {
+        renderLibraryTab();
+      }
+    }
+    // Üst İstatistikleri ve Seçicileri Güncelle
+    function refreshGlobalStatsAndSelectors() {
+      const total = state.cards.length;
+      const missed = state.cards.filter(c => c.status === 'missed').length;
+      const mastered = state.cards.filter(c => c.status === 'mastered').length;
+      document.getElementById('statTotalCards').textContent = String(total);
+      document.getElementById('statMissedCards').textContent = String(missed);
+      document.getElementById('statMasteredCards').textContent = String(mastered);
+      document.getElementById('navMissedCount').textContent = String(missed);
+      // Ders listesini tüm kartlardaki derslerle birleştir
+      const cardCourses = state.cards.map(c => c.course).filter(Boolean);
+      cardCourses.forEach(cc => {
+        if (!state.courses.includes(cc)) state.courses.push(cc);
+      });
+      // Ders Select elemanlarını doldur
+      const courseSelectors = [
+        { id: 'studyCourseFilter', includeAll: true },
+        { id: 'pdfCourseSelect', includeAll: false },
+        { id: 'missedCourseFilter', includeAll: true },
+        { id: 'manualCourseSelect', includeAll: false },
+        { id: 'libraryCourseFilter', includeAll: true }
+      ];
+      courseSelectors.forEach(({ id, includeAll }) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prevVal = sel.value;
+        sel.innerHTML = '';
+        if (includeAll) {
+          const opt = document.createElement('option');
+          opt.value = 'ALL';
+          opt.textContent = 'Tüm Dersler';
+          sel.appendChild(opt);
+        }
+        state.courses.forEach(courseName => {
+          const opt = document.createElement('option');
+          opt.value = courseName;
+          opt.textContent = courseName;
+          sel.appendChild(opt);
+        });
+        if (prevVal && Array.from(sel.options).some(o => o.value === prevVal)) {
+          sel.value = prevVal;
+        }
+      });
+      // Konu Datalist ve Konu Filtrelerini Güncelle
+      const allTopics = Array.from(new Set(state.cards.map(c => c.topic).filter(Boolean)));
+      const datalist = document.getElementById('existingTopicsDatalist');
+      if (datalist) {
+        datalist.innerHTML = '';
+        allTopics.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          datalist.appendChild(opt);
+        });
+      }
+      updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+      updateTopicSelectForCourse('libraryCourseFilter', 'libraryTopicFilter');
+    }
+    function updateTopicSelectForCourse(courseSelectId, topicSelectId) {
+      const courseSel = document.getElementById(courseSelectId);
+      const topicSel = document.getElementById(topicSelectId);
+      if (!courseSel || !topicSel) return;
+      const selectedCourse = courseSel.value;
+      const prevTopic = topicSel.value;
+      const relevantTopics = Array.from(new Set(
+        state.cards
+          .filter(c => selectedCourse === 'ALL' || c.course === selectedCourse)
+          .map(c => c.topic)
+          .filter(Boolean)
+      ));
+      topicSel.innerHTML = '<option value="ALL">Tüm Konular</option>';
+      relevantTopics.forEach(topic => {
+        const opt = document.createElement('option');
+        opt.value = topic;
+        opt.textContent = topic;
+        topicSel.appendChild(opt);
+      });
+      if (prevTopic && Array.from(topicSel.options).some(o => o.value === prevTopic)) {
+        topicSel.value = prevTopic;
+      } else {
+        topicSel.value = 'ALL';
+      }
+    }
+    // ================= ANKİ ÇALIŞMA MODU =================
+    function rebuildStudyDeck(resetIndex = true) {
+      const courseVal = document.getElementById('studyCourseFilter').value;
+      const topicVal = document.getElementById('studyTopicFilter').value;
+      const statusVal = document.getElementById('studyStatusFilter').value;
+      state.studyFilter = { course: courseVal, topic: topicVal, status: statusVal };
+      const filtered = state.cards.filter(card => {
+        if (courseVal !== 'ALL' && card.course !== courseVal) return false;
+        if (topicVal !== 'ALL' && card.topic !== topicVal) return false;
+        if (statusVal === 'MISSED' && card.status !== 'missed') return false;
+        if (statusVal === 'UNSEEN' && card.status !== 'unseen') return false;
+        if (statusVal === 'REVIEW' && card.status !== 'hard' && card.status !== 'missed') return false;
+        if (statusVal === 'MASTERED' && card.status !== 'mastered') return false;
+        return true;
+      });
+      state.studyDeckIds = filtered.map(c => c.id);
+      if (resetIndex || state.currentCardIndex >= state.studyDeckIds.length) {
+        state.currentCardIndex = 0;
+      }
+      state.isBackRevealed = false;
+      renderCurrentStudyCard();
+    }
+    function renderCurrentStudyCard() {
+      const emptyEl = document.getElementById('studyEmptyState');
+      const wrapEl = document.getElementById('studyActiveCardWrap');
+      const summaryEl = document.getElementById('studyDeckSummary');
+      const progressEl = document.getElementById('studyProgressBar');
+      const totalInDeck = state.studyDeckIds.length;
+      if (totalInDeck === 0) {
+        emptyEl.classList.remove('hidden');
+        wrapEl.classList.add('hidden');
+        summaryEl.textContent = 'Seçili filtrede 0 kart bulunuyor';
+        progressEl.style.width = '0%';
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      wrapEl.classList.remove('hidden');
+      if (state.currentCardIndex < 0) state.currentCardIndex = 0;
+      if (state.currentCardIndex >= totalInDeck) state.currentCardIndex = 0;
+      const cardId = state.studyDeckIds[state.currentCardIndex];
+      const card = state.cards.find(c => c.id === cardId);
+      if (!card) return;
+      const pos = state.currentCardIndex + 1;
+      summaryEl.textContent = `Aktif Deste: ${totalInDeck} Kart (${card.course} • ${card.topic})`;
+      progressEl.style.width = `${Math.round((pos / totalInDeck) * 100)}%`;
+      document.getElementById('cardCourseBadge').textContent = card.course;
+      document.getElementById('cardTopicBadge').textContent = card.topic;
+      document.getElementById('cardSourceLabel').textContent = card.source || 'KPSS Kartı';
+      document.getElementById('cardCounterLabel').textContent = `Kart ${pos} / ${totalInDeck}`;
+      document.getElementById('cardQuestionText').textContent = card.question;
+      document.getElementById('cardAnswerText').textContent = card.answer;
+      document.getElementById('cardExplanationText').textContent = card.explanation || 'Bu kart için konu bölümü açıklaması mevcut.';
+      document.getElementById('cardHistoryStats').textContent = `Bildim: ${card.correctCount || 0} kez • Bilemedim: ${card.missedCount || 0} kez`;
+      const statusBadge = document.getElementById('cardStatusBadge');
+      const statusMap = {
+        unseen: { text: 'Yeni Kart', cls: 'bg-slate-100 text-slate-700' },
+        missed: { text: 'Bilemediklerimde (Eksik)', cls: 'bg-rose-100 text-rose-800' },
+        hard: { text: 'Zorlanılan Kart', cls: 'bg-amber-100 text-amber-800' },
+        mastered: { text: 'Öğrenildi', cls: 'bg-emerald-100 text-emerald-800' }
+      };
+      const st = statusMap[card.status] || statusMap.unseen;
+      statusBadge.textContent = st.text;
+      statusBadge.className = `px-2.5 py-1 rounded-full text-xs font-bold ${st.cls}`;
+      // Ön / Arka görünürlük
+      const promptEl = document.getElementById('revealAnswerPrompt');
+      const backEl = document.getElementById('cardBackSection');
+      if (state.isBackRevealed) {
+        promptEl.classList.add('hidden');
+        backEl.classList.remove('hidden');
+      } else {
+        promptEl.classList.remove('hidden');
+        backEl.classList.add('hidden');
+      }
+    }
+    function revealCurrentCardAnswer() {
+      if (state.studyDeckIds.length === 0) return;
+      state.isBackRevealed = true;
+      renderCurrentStudyCard();
+    }
+    function rateCurrentCard(rating) {
+      if (state.studyDeckIds.length === 0) return;
+      const cardId = state.studyDeckIds[state.currentCardIndex];
+      const card = state.cards.find(c => c.id === cardId);
+      if (!card) return;
+      if (rating === 'missed') {
+        card.status = 'missed';
+        card.missedCount = (card.missedCount || 0) + 1;
+        showToast('Kart "Bilemediklerim" bölümüne kaydedildi.', 'danger');
+      } else if (rating === 'hard') {
+        card.status = 'hard';
+        showToast('Kart tekrar edilmek üzere işaretlendi.', 'info');
+      } else if (rating === 'mastered') {
+        card.status = 'mastered';
+        card.correctCount = (card.correctCount || 0) + 1;
+        showToast('Harika! Kart öğrenildi olarak işaretlendi.', 'success');
+      }
+      saveState();
+      refreshGlobalStatsAndSelectors();
+      // Eğer filtrede kart çıktıysa veya sıradaki karta geçilecekse
+      const prevLength = state.studyDeckIds.length;
+      const currentFilterStatus = document.getElementById('studyStatusFilter').value;
+      if (currentFilterStatus !== 'ALL') {
+        rebuildStudyDeck(false);
+        if (state.studyDeckIds.length === prevLength && state.studyDeckIds.length > 0) {
+          state.currentCardIndex = (state.currentCardIndex + 1) % state.studyDeckIds.length;
+        }
+      } else {
+        state.currentCardIndex = (state.currentCardIndex + 1) % state.studyDeckIds.length;
+      }
+      state.isBackRevealed = false;
+      renderCurrentStudyCard();
+    }
+    // ================= HİÇBİR AYRINTIYI ATLAMAYAN PDF METİN VE KART ÇIKARICI =================
+    // PDF akıllı okuma: geometri + devamlılık + OCR yedeği
+    const PDF_ANALYSIS = { pages: [], topics: [], warnings: [] };
+    function normalizeTurkish(s) { return (s||'').toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/İ/g,'i').replace(/ş/g,'s').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ö/g,'o').replace(/ç/g,'c').replace(/\s+/g,' ').trim(); }
+    function looksLikeHeading(s) {
+      const t=s.trim();
+      if(t.length<4 || t.length>105 || /[.!?]$/.test(t)) return false;
+      return (/^[0-9]+(?:\.[0-9]+)*[.)]?\s+/.test(t) || /^[IVXLC]+[.)]\s+/i.test(t) || /^[A-ZÇĞİÖŞÜ0-9 ()/,&:–—-]+$/.test(t) || /^(KONU|ÜNİTE|BÖLÜM)\b/i.test(t));
+    }
+    function orderPageItems(items, viewport) {
+      const blocks=items.filter(x=>x.str && x.str.trim()).map(x=>({text:x.str.trim(), x:x.transform?.[4]||0, y:x.transform?.[5]||0, w:x.width||0, h:Math.abs(x.transform?.[3]||10)}));
+      if(!blocks.length) return {text:'', order:'empty', confidence:0};
+      const width=viewport.width, mid=width/2;
+      // İki sütun ayrımı: metin bloklarının yatay merkez dağılımında boşluk ara.
+      const xs=blocks.map(b=>b.x+b.w/2).sort((a,b)=>a-b);
+      let split=mid, largest=0;
+      for(let i=1;i<xs.length;i++){ const gap=xs[i]-xs[i-1]; if(gap>largest && gap>width*.07){largest=gap;split=(xs[i]+xs[i-1])/2;} }
+      const left=blocks.filter(b=>b.x+b.w/2<split), right=blocks.filter(b=>b.x+b.w/2>=split);
+      const twoCols=left.length>3 && right.length>3 && largest>width*.07;
+      const sortLines=arr=>{
+        arr.sort((a,b)=>Math.abs(a.y-b.y)>3 ? b.y-a.y : a.x-b.x);
+        const lines=[]; for(const b of arr){let row=lines.find(r=>Math.abs(r.y-b.y)<=3); if(!row) lines.push(row={y:b.y,parts:[]}); row.parts.push(b);}
+        return lines.sort((a,b)=>b.y-a.y).map(r=>r.parts.sort((a,b)=>a.x-b.x).map(b=>b.text).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+      };
+      if(!twoCols) return {text:sortLines(blocks).join('\n'),order:'single-column/top-down',confidence:.82};
+      const L=sortLines(left), R=sortLines(right);
+      // Sütunların sırasını başlık numarası ve cümle devamı ipuçlarıyla seç; kararsızsa sağ-sol/sol-sağ kararı uydurma.
+      const firstHeading=a=>a.find(x=>looksLikeHeading(x))||a[0]||'';
+      const score=a=>{const h=firstHeading(a); let n=0; const m=h.match(/^\s*(\d+(?:\.\d+)*)[.)]?/); if(m)n+=Number(m[1].split('.')[0])*.15; if(/[,:;]$/.test(a[a.length-1]||''))n+=.2; return n;};
+      const ls=score(L), rs=score(R);
+      let sequence, confidence=.62, order='column-order-ambiguous';
+      if(Math.abs(ls-rs)>.25){sequence=ls<rs?[L,R]:[R,L];confidence=.76;order=ls<rs?'left-then-right':'right-then-left';}
+      else { // Varsayılan değil: dikey devamlılık ve başlık başlangıcı ile değerlendir
+        const lEnd=(L[L.length-1]||'').trim(), rStart=(R[0]||'').trim();
+        if(/[,:;(-]$/.test(lEnd) && !looksLikeHeading(rStart)){sequence=[L,R];confidence=.72;order='left-then-right-continuation';}
+        else if(/[,:;(-]$/.test((R[R.length-1]||'').trim()) && !looksLikeHeading(L[0]||'')){sequence=[R,L];confidence=.72;order='right-then-left-continuation';}
+        else {sequence=[L,R];confidence=.48;order='ambiguous-review-required';}
+      }
+      return {text:sequence.flat().join('\n'),order,confidence};
+    }
+    async function ocrPdfPage(page) {
+      if(!window.Tesseract) return '';
+      const viewport=page.getViewport({scale:1.8}), canvas=document.createElement('canvas');
+      canvas.width=Math.ceil(viewport.width); canvas.height=Math.ceil(viewport.height);
+      await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+      const result=await Tesseract.recognize(canvas,'tur+eng',{logger:()=>{}});
+      return result.data?.text||'';
+    }
+    function detectPdfTopics(raw) {
+      const lines=raw.split('\n').map(x=>x.trim()).filter(Boolean), headings=[];
+      const tocLike=lines.some(x=>/İÇİNDEKİLER|İÇİNDEKİLER TABLOSU/i.test(x));
+      for(let i=0;i<lines.length;i++){
+        const line=lines[i].replace(/^[-•*#]+\s*/, '').trim();
+        if(/^=== \[PDF Sayfa/.test(line)) continue;
+        if(looksLikeHeading(line) && line.length>=6){
+          const page=(raw.slice(0,raw.indexOf(lines[i])).match(/=== \[PDF Sayfa (\d+)\] ===/g)||[]).slice(-1)[0];
+          const pageNo=page?Number(page.match(/\d+/)[0]):1;
+          headings.push({title:line.replace(/^\d+(?:\.\d+)*[.)]?\s*/,''),page:pageNo,lineIndex:i,level:/^\d+\.\d+/.test(line)?2:1});
+        }
+      }
+      // Başlıkların ana ünite/alt konu ayrımı; numaralı ve büyük başlıklar ana adaydır.
+      const main=headings.filter(h=>h.level===1 && h.title.length>5);
+      const unique=[]; for(const h of main){if(!unique.some(x=>normalizeTurkish(x.title)===normalizeTurkish(h.title)))unique.push(h);}
+      if(unique.length<2){
+        const inferred=headings.filter(h=>h.title.length>8 && /tarihi|devleti|dönemi|anayasası|coğrafya|savaşı|medeniyet/i.test(h.title));
+        for(const h of inferred) if(!unique.some(x=>normalizeTurkish(x.title)===normalizeTurkish(h.title))) unique.push(h);
+      }
+      unique.sort((a,b)=>a.lineIndex-b.lineIndex);
+      return {main:unique, all:headings, tocLike};
+    }
+    async function handlePdfFileSelected(file) {
+      if(!file) return;
+      const statusBox=document.getElementById('pdfExtractionStatusBox'), fileNameLabel=document.getElementById('pdfFileNameLabel'), pageCountLabel=document.getElementById('pdfPageCountLabel'), progressBar=document.getElementById('pdfReadProgressBar'), stepText=document.getElementById('pdfExtractionStepText'), rawTextarea=document.getElementById('pdfRawTextInput'), topicInput=document.getElementById('pdfTopicInput');
+      statusBox.classList.remove('hidden'); fileNameLabel.textContent=file.name; progressBar.style.width='2%'; stepText.textContent='PDF sayfa yapısı analiz ediliyor...';
+      if(!topicInput.value.trim()) topicInput.value=file.name.replace(/\.(pdf|txt|md)$/i,'').replace(/[_-]+/g,' ').trim();
+      const readBuffer=f=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsArrayBuffer(f);});
+      if(/\.(txt|md)$/i.test(file.name)||file.type==='text/plain'){const r=new FileReader();r.onload=()=>{rawTextarea.value=String(r.result||'');pageCountLabel.textContent='Metin Dosyası';progressBar.style.width='100%';stepText.textContent='Metin aktarıldı. Ünite analizi için kart oluşturma adımına geçin.';};r.readAsText(file,'UTF-8');return;}
+      try {
+        if(!window.pdfjsLib) throw new Error('PDF.js yüklenemedi');
+        const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await readBuffer(file)),disableWorker:true,isEvalSupported:false}).promise;
+        pageCountLabel.textContent=`${pdf.numPages} sayfa`; let output='', empty=0, ocrCount=0; PDF_ANALYSIS.pages=[]; PDF_ANALYSIS.warnings=[];
+        for(let n=1;n<=pdf.numPages;n++){
+          const page=await pdf.getPage(n), viewport=page.getViewport({scale:1}), tc=await page.getTextContent();
+          let ordered=orderPageItems(tc.items,viewport), text=ordered.text;
+          if(text.replace(/\s/g,'').length<25){const ocr=await ocrPdfPage(page); if(ocr.trim().length>20){text=ocr;ocrCount++;ordered.order='OCR-page-layout';ordered.confidence=.55;}else empty++;}
+          PDF_ANALYSIS.pages.push({page:n,order:ordered.order,confidence:ordered.confidence,chars:text.length,ocr:ordered.order==='OCR-page-layout'});
+          if(ordered.confidence<.55) PDF_ANALYSIS.warnings.push(`${n}. sayfa sütun sırası belirsiz`);
+          output+=`\n=== [PDF Sayfa ${n}] ===\n${text}\n`;
+          progressBar.style.width=`${Math.round(n/pdf.numPages*100)}%`; stepText.textContent=`Sayfa ${n}/${pdf.numPages} analiz edildi · OCR: ${ocrCount} · boş/okunamayan: ${empty}`;
+          if(n%5===0) await new Promise(r=>setTimeout(r,0));
+        }
+        rawTextarea.value=output.trim(); const topicInfo=detectPdfTopics(rawTextarea.value); PDF_ANALYSIS.topics=topicInfo.main;
+        const warningCount=PDF_ANALYSIS.warnings.length;
+        stepText.textContent=`Analiz tamamlandı: ${pdf.numPages} sayfa · ${topicInfo.main.length} olası ana ünite · ${ocrCount} OCR sayfası · ${empty} okunamayan sayfa · ${warningCount} sıralama uyarısı. Kartları oluşturmadan önce ünite ayrımını kontrol edin.`;
+        showToast(`${pdf.numPages} sayfa analiz edildi. Otomatik konu tespiti: ${topicInfo.main.length} ana başlık.`,warningCount||empty?'info':'success');
+      } catch(e){console.error(e);stepText.textContent=`PDF okuma hatası: ${e.message||e}`;showToast('PDF okunamadı. Dosya bozuk veya tarayıcı kütüphanesi erişilemiyor.','danger');}
+    }
+    function splitIntoDetectedTopics(rawText, fallbackTopic) {
+      const lines=rawText.split('\n'), found=detectPdfTopics(rawText).main;
+      if(found.length<2) return [{title:fallbackTopic,subtopic:fallbackTopic,text:rawText}];
+      const ranges=[]; let current=null;
+      for(let i=0;i<lines.length;i++){
+        const clean=lines[i].replace(/^[-•*#]+\s*/,'').trim();
+        const hit=found.find(h=>normalizeTurkish(h.title)===normalizeTurkish(clean.replace(/^\d+(?:\.\d+)*[.)]?\s*/,'')));
+        if(hit){if(current)ranges.push(current);current={title:hit.title,start:i,lines:[]};}
+        if(current) current.lines.push(lines[i]);
+      }
+      if(current)ranges.push(current);
+      if(!ranges.length)return [{title:fallbackTopic,subtopic:fallbackTopic,text:rawText}];
+      return ranges.map(r=>{const chunk=r.lines.join('\n'), subheads=chunk.split('\n').map(x=>x.trim()).filter(x=>looksLikeHeading(x));return {title:r.title,subtopic:r.title,text:chunk,subheads};});
+    }
+    /**
+     * Hiçbir Ayrıntıyı Atlamayan Soru-Cevap-Açıklama Üretim Motoru
+     * Yalnızca verilen PDF metnindeki cümleleri, maddeleri, tanımları, tarihleri ve kuralları kullanır.
+     * Her üretilen kartın açıklama kısmına, o cümlenin ait olduğu konu bölümünün tamamını/geniş bağlamını koyar.
+     */
+    function generateExhaustiveCardsFromText(rawText, courseName, topicName, mode) {
+      const cleanedText = rawText.replace(/\r\n/g, '\n').trim();
+      if (!cleanedText) return [];
+      // 1. Metni mantıksal konu bölümlerine (paragraf / alt başlık bloklarına) ayır
+      const lines = cleanedText.split('\n').map(l => l.trim()).filter(Boolean);
+      const sections = [];
+      let currentPage = 'Sayfa 1';
+      let currentSectionTitle = topicName;
+      let currentLines = [];
+      const isHeadingLine = (line) => {
+        if (/^===\s*\[PDF Sayfa \d+\]\s*===$/i.test(line)) return false;
+        if (line.length < 85 && !/[.!?]$/.test(line) && (
+          /^[A-ZÇĞİÖŞÜ0-9\s\-–—().:/]+$/.test(line) ||
+          /^(?:\d+|[A-Z]|[IVX]+)[\.\)]\s+[A-ZÇĞİÖŞÜ]/.test(line) ||
+          /^(?:KONU|BÖLÜM|ÜNİTE|BAŞLIK|MADDE)\b/i.test(line)
+        )) {
+          return true;
+        }
+        return false;
+      };
+      const flushSection = () => {
+        if (currentLines.length > 0) {
+          sections.push({
+            page: currentPage,
+            sectionTitle: currentSectionTitle,
+            fullSectionText: currentLines.join(' '),
+            rawLines: [...currentLines]
+          });
+          currentLines = [];
+        }
+      };
+      for (const line of lines) {
+        const pageMatch = line.match(/^===\s*\[(PDF Sayfa \d+)\]\s*===$/i);
+        if (pageMatch) {
+          flushSection();
+          currentPage = pageMatch[1];
+          continue;
+        }
+        if (isHeadingLine(line)) {
+          flushSection();
+          currentSectionTitle = line.replace(/^[-•*#]+\s*/, '').trim();
+          continue;
+        }
+        currentLines.push(line);
+        // Çok uzun blokları 5-6 satırda bir alt bölüme ayır ki açıklama kısmı tam ilgili paragrafı kapsasın
+        if (currentLines.join(' ').length > 750) {
+          flushSection();
+        }
+      }
+      flushSection();
+      const generatedCards = [];
+      const seenQuestions = new Set();
+      const addCard = (question, answer, sectionObj, sourceDetail) => {
+        const qClean = question.replace(/\s+/g, ' ').trim();
+        const aClean = answer.replace(/\s+/g, ' ').trim();
+        if (!qClean || !aClean || aClean.length < 4) return;
+        const dedupKey = `${qClean.toLowerCase()}__${aClean.toLowerCase()}`;
+        if (seenQuestions.has(dedupKey)) return;
+        seenQuestions.add(dedupKey);
+        const sectionHeader = `${courseName} • ${topicName}${sectionObj.sectionTitle &&sectionObj.sectionTitle !== topicName ? ' — ' + sectionObj.sectionTitle : ''} (${sectionObj.page})`;
+        const broadExplanation = `[Konu Bölümü:${sectionHeader}]\n\n${sectionObj.fullSectionText}`;
+        generatedCards.push({
+          id: 'card-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) + '-' +generatedCards.length,
+          course: courseName,
+          topic: topicName,
+          mainTopic: topicName,
+          subtopic: sectionObj.sectionTitle || topicName,
+          question: qClean,
+          answer: aClean,
+          explanation: broadExplanation,
+          source: `${sectionObj.page} • ${sectionObj.sectionTitle || topicName}`,
+          status: 'unseen',
+          missedCount: 0,
+          correctCount: 0,
+          createdAt: Date.now() + generatedCards.length
+        });
+      };
+      // 2. Her bölümü ve içindeki her cümleyi / maddeyi tek tek tara (%100 Kapsama)
+      sections.forEach((sec) => {
+        // Eğer bölümde madde işaretli satırlar varsa önce tüm maddeleri kapsayan bütüncül bir liste kartı da üret
+        const bulletLines = sec.rawLines.filter(l => /^([-•*▪▸]|\d+[\.\)]|[a-zA-Z][\.\)])\s+/.test(l));
+        if (bulletLines.length >= 2 && sec.sectionTitle) {
+          addCard(
+            `PDF metnine göre "${sec.sectionTitle}" başlığı altında yer alan maddeler ve özellikler nelerdir?`,
+            bulletLines.join('\n'),
+            sec
+          );
+        }
+        // Cümlelere ayırma (kısaltmaları bozmadan)
+        const rawUnits = [];
+        sec.rawLines.forEach(line => {
+          const cleanLine = line.replace(/^([-•*▪▸]|\d+[\.\)]|[a-zA-Z][\.\)])\s+/, '').trim();
+          const splitSentences = cleanLine
+            .replace(/(\b(?:Dr|Prof|Av|MÖ|MS|vb|vs|Örn|Bkz|Md|No|yy))\./gi, '$1{{DOT}}')
+            .split(/(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ0-9"“'(\[])/)
+            .map(s => s.replace(/\{\{DOT\}\}/g, '.').trim())
+            .filter(s => s.length >= 12);
+          if (splitSentences.length > 0) {
+            rawUnits.push(...splitSentences);
+          } else if (cleanLine.length >= 10) {
+            rawUnits.push(cleanLine);
+          }
+        });
+        rawUnits.forEach((sentence) => {
+          let matchedSpecificPattern = false;
+          // A) İki nokta üst üste veya tire ile ayrılmış Tanım / Başlık-Açıklama ("Kavram: Açıklama")
+          const colonMatch = sentence.match(/^([A-ZÇĞİÖŞÜ0-9][^:–—]{2,65})\s*[:–—]\s*(.{8,})$/);
+          if (colonMatch) {
+            const term = colonMatch[1].trim();
+            const desc = colonMatch[2].trim();
+            addCard(
+              `${sec.sectionTitle ? '[' + sec.sectionTitle + '] ' : ''}"${term}" nedir ve PDF metnine göre hangi özellikleri taşır?`,
+              `${term}: ${desc}`,
+              sec
+            );
+            matchedSpecificPattern = true;
+          }
+          // B) "... denir / ... adı verilir / ... olarak tanımlanır / ... ifade eder" tanım cümleleri
+          const defMatch =sentence.match(/^(.{10,}?)\s+(?:olarak\s+)?([a-zçğıöşüA-ZÇĞİÖŞÜ0-9\s’'()-]{2,45}?)\s+(?:denir| adı verilir|olarak adlandırılır|olarak tanımlanır|olarak ifade edilir)\.?$/i);
+          if (defMatch) {
+            const definitionPart = defMatch[1].trim();
+            const conceptName = defMatch[2].trim();
+            addCard(
+              `PDF'deki "${sec.sectionTitle}" konusuna göre; ${definitionPart} şeklinde tanımlanan kavram hangisidir?`,
+              `${conceptName} (${sentence})`,
+              sec
+            );
+            matchedSpecificPattern = true;
+          }
+          // C) "... ise ... demektir / ... şudur" özne-yüklem tanım kalıbı
+          const subjMatch =sentence.match(/^([A-ZÇĞİÖŞÜ][a-zçğıöşüA-ZÇĞİÖŞÜ0-9\s’'()-]{2,55}?),\s+(.{15,})$/);
+          if (subjMatch && !matchedSpecificPattern) {
+            const subjectPhrase = subjMatch[1].trim();
+            addCard(
+              `PDF notuna göre "${subjectPhrase}" ile ilgili verilen bilgi ve hüküm nedir?`,
+              sentence,
+              sec
+            );
+            matchedSpecificPattern = true;
+          }
+          // D) Tarih / Yıl / Sayısal Süre / Oran içeren kritik KPSS ayrıntıları
+          const yearOrNumberMatch =sentence.match(/\b(\d{4}\s+yılında|\d{1,2}\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+\d{4}|\d+\s+(?:yıl|gün| ay|üye|milletvekili|kişi|madde)|%\s*\d+|\d+\/\d+)\b/i);
+          if (yearOrNumberMatch) {
+            const numToken = yearOrNumberMatch[1].trim();
+            const maskedSentence = sentence.replace(numToken, ' [ ...? ... ] ');
+            addCard(
+              `Sayısal/Tarihsel Ayrıntı (${sec.sectionTitle}): "${maskedSentence}" ifadesinde boş bırakılan yere PDF'e göre ne gelmelidir?`,
+              `${numToken} — Tam Bilgi: ${sentence}`,
+              sec
+            );
+            matchedSpecificPattern = true;
+          }
+          // E) "ilk kez", "en önemli", "ancak", "hariç", "amacıyla", "nedeniyle" içeren sınav tuzakları
+          const kpssTriggerMatch = sentence.match(/\b(ilk kez|ilk defa|en önemli|en büyük|en uzun|ancak|hariç|istisna|amacıyla|nedeniyle|sonucunda|tarafından)\b/i);
+          if (kpssTriggerMatch && (mode === 'CLAUSE_AND_SENTENCE' || !matchedSpecificPattern)) {
+            const keyword = kpssTriggerMatch[1];
+            addCard(
+              `"${sec.sectionTitle}" bölümünde "${keyword}" vurgusuyla belirtilen önemli sınav ayrıntısı nedir?`,
+              sentence,
+              sec
+            );
+            matchedSpecificPattern = true;
+          }
+          // F) %100 Kapsama Garantisi: Yukarıdaki özel kalıplara girmeyen her cümle için de eksiksiz soru-cevap kartı üret
+          if (!matchedSpecificPattern || mode === 'CLAUSE_AND_SENTENCE') {
+            // Cümlenin ilk anlamlı kelime grubunu kullanarak doğrudan konuya özgü soru oluştur
+            const words = sentence.split(/\s+/);
+            const leadPreview = words.slice(0, Math.min(6, Math.max(3, Math.floor(words.length /2)))).join(' ');
+            addCard(
+              `[${sec.sectionTitle}] PDF metninde "${leadPreview}..." ile başlayan bölümde hangi bilgi ve ayrıntı yer almaktadır?`,
+              sentence,
+              sec
+            );
+          }
+        });
+      });
+      return generatedCards;
+    }
+    function generateCardsByDetectedTopics(rawText, courseName, fallbackTopic, mode) {
+      const groups=splitIntoDetectedTopics(rawText,fallbackTopic), all=[];
+      groups.forEach(group=>{
+        const cards=generateExhaustiveCardsFromText(group.text,courseName,group.title,mode);
+        cards.forEach(card=>{card.mainTopic=group.title;card.subtopic=card.topic;card.topic=group.title;card.source=`${card.source} · ${group.title}`;all.push(card);});
+      });
+      return {cards:all,groups};
+    }
+    // ================= BİLEMEDİKLERİM VE EKSİK ANALİZİ SEKME RENDER =================
+    function renderMissedTab() {
+      const missedCards = state.cards.filter(c => c.status === 'missed');
+      const gridEl = document.getElementById('weaknessBreakdownGrid');
+      const listEl = document.getElementById('missedCardsListContainer');
+      const filterCourse = document.getElementById('missedCourseFilter').value;
+      // Ders & Konu bazlı eksiklik istatistikleri
+      const topicStats = {};
+      state.cards.forEach(c => {
+        const key = `${c.course}|||${c.topic}`;
+        if (!topicStats[key]) {
+          topicStats[key] = { course: c.course, topic: c.topic, total: 0, missed: 0, mastered: 0 };
+        }
+        topicStats[key].total += 1;
+        if (c.status === 'missed') topicStats[key].missed += 1;
+        if (c.status === 'mastered') topicStats[key].mastered += 1;
+      });
+      const topicArr = Object.values(topicStats).sort((a, b) => b.missed - a.missed || b.total -a.total);
+      gridEl.innerHTML = '';
+      topicArr.forEach(item => {
+        const missPct = item.total > 0 ? Math.round((item.missed / item.total) * 100) : 0;
+        const cardDiv = document.createElement('div');
+        cardDiv.className = `p-4 rounded-2xl border ${item.missed > 0 ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-slate-50/60'} flex flex-col justify-between gap-3`;
+        cardDiv.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[11px] font-bold">${escapeHtml(item.course)}</span>
+              <span class="text-xs font-bold ${item.missed > 0 ? 'text-rose-700' :'text-emerald-700'}">
+                ${item.missed > 0 ? `${item.missed} Eksik (%${missPct})` : 'Eksik Yok'}
+              </span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-900 mt-1.5">${escapeHtml(item.topic)}</h4>
+            <p class="text-xs text-slate-500 mt-0.5">Toplam ${item.total} Kart • Öğrenilen:${item.mastered}</p>
+          </div>
+          <div>
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
+              <div class="h-full ${item.missed > 0 ? 'bg-rose-500' : 'bg-emerald-500'}" style="width:${item.missed > 0 ? Math.max(12, missPct) : 100}%"></div>
+            </div>
+            <button type="button" data-study-course="${escapeHtml(item.course)}" data-study-topic="${escapeHtml(item.topic)}" data-study-only-missed="${item.missed > 0 ? '1' :'0'}" class="topic-quick-study-btn w-full py-1.5 rounded-xl text-xs font-bold ${item.missed > 0 ?'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-white hover:bg-slate-100 border border-slate-300 text-slate-700'} transition">
+              ${item.missed > 0 ? 'Bu Konudaki Eksiklerimi Çalış' : 'Bu Konuyu Tekrar Et'}
+            </button>
+          </div>
+        `;
+        gridEl.appendChild(cardDiv);
+      });
+      // Bilemediklerim Kart Listesi
+      const filteredMissed = missedCards.filter(c => filterCourse === 'ALL' || c.course ===filterCourse);
+      listEl.innerHTML = '';
+      if (filteredMissed.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-8 text-center rounded-2xl bg-slate-50 border border-slate-200">
+            <p class="text-sm font-bold text-slate-800">Harika! Seçili derste "Bilemediklerim" listesinde kart bulunmuyor.</p>
+            <p class="text-xs text-slate-500 mt-1">Kartlarla çalışırken "1 • Bilemedim" butonuna bastığınız sorular otomatik olarak buraya eklenir.</p>
+          </div>
+        `;
+        return;
+      }
+      filteredMissed.forEach(card => {
+        const row = document.createElement('div');
+        row.className = 'p-4 rounded-2xl border border-rose-200 bg-rose-50/20 space-y-2.5';
+        row.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-xs font-bold">${escapeHtml(card.course)}</span>
+              <span class="px-2.5 py-0.5 rounded bg-slate-200 text-slate-800 text-xs font-semibold">${escapeHtml(card.topic)}</span>
+              <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[11px] font-bold">${card.missedCount || 1} kez bilemedin</span>
+            </div>
+            <button type="button" data-mark-learned-id="${card.id}" class="mark-learned-btn px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition">
+              Öğrendim (Listeden Çıkar)
+            </button>
+          </div>
+          <div class="text-sm font-bold text-slate-900">Soru: ${escapeHtml(card.question)}</div>
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-semibold text-emerald-950">
+            <span class="font-extrabold uppercase text-emerald-700">Cevap:</span> ${escapeHtml(card.answer)}
+          </div>
+          <div class="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-xs text-slate-800 whitespace-pre-line">
+            <span class="font-extrabold uppercase text-amber-900 block mb-1">Konu Bölümü Geniş Açıklaması:</span>${escapeHtml(card.explanation)}
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+    // ================= DERS & KONU ARŞİVİ SEKME RENDER =================
+    function renderLibraryTab() {
+      const searchQ = (document.getElementById('librarySearchInput').value ||'').toLowerCase().trim();
+      const courseF = document.getElementById('libraryCourseFilter').value;
+      const topicF = document.getElementById('libraryTopicFilter').value;
+      const foldersGrid = document.getElementById('courseTopicFoldersGrid');
+      const cardsList = document.getElementById('libraryCardsList');
+      // Ders özet kutuları
+      foldersGrid.innerHTML = '';
+      state.courses.forEach(courseName => {
+        const courseCards = state.cards.filter(c => c.course === courseName);
+        const topics = Array.from(new Set(courseCards.map(c => c.topic)));
+        const missedCount = courseCards.filter(c => c.status === 'missed').length;
+        const box = document.createElement('div');
+        box.className = 'p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between gap-3';
+        box.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-slate-900">${escapeHtml(courseName)}</h4>
+              <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold">${courseCards.length} Kart</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">${topics.length} Alt Konu • ${missedCount} Bilemediğim</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" data-filter-course-lib="${escapeHtml(courseName)}" class="lib-course-filter-btn flex-1 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-xs font-semibold text-slate-700">Kartları Gör</button>
+            <button type="button" data-study-course-direct="${escapeHtml(courseName)}" class="lib-course-study-btn flex-1 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold text-white">Hemen Çalış</button>
+          </div>
+        `;
+        foldersGrid.appendChild(box);
+      });
+      // Filtrelenmiş kartlar
+      const matchingCards = state.cards.filter(c => {
+        if (courseF !== 'ALL' && c.course !== courseF) return false;
+        if (topicF !== 'ALL' && c.topic !== topicF) return false;
+        if (searchQ) {
+          const hay = `${c.course} ${c.topic} ${c.question} ${c.answer} ${c.explanation}`.toLowerCase();
+          if (!hay.includes(searchQ)) return false;
+        }
+        return true;
+      });
+      cardsList.innerHTML = '';
+      if (matchingCards.length === 0) {
+        cardsList.innerHTML = `<div class="p-6 text-center text-sm text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">Arama kriterlerine uygun kart bulunamadı.</div>`;
+        return;
+      }
+      matchingCards.slice(0, 60).forEach(card => {
+        const item = document.createElement('div');
+        item.className = 'p-4 rounded-2xl border border-slate-200 bg-white space-y-2';
+        item.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-xs font-bold">${escapeHtml(card.course)}</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-semibold">${escapeHtml(card.topic)}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" data-edit-card-id="${card.id}" class="lib-edit-card-btn text-xs font-semibold text-indigo-600 hover:underline">Düzenle</button>
+              <button type="button" data-delete-card-id="${card.id}" class="lib-delete-card-btn text-xs font-semibold text-rose-600 hover:underline">Sil</button>
+            </div>
+          </div>
+          <p class="text-sm font-bold text-slate-900">${escapeHtml(card.question)}</p>
+          <p class="text-xs sm:text-sm text-emerald-900 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200"><strong class="text-emerald-700">Cevap:</strong> ${escapeHtml(card.answer)}</p>
+          <p class="text-xs text-slate-700 bg-amber-50/70 px-3 py-2 rounded-xl border border-amber-200 whitespace-pre-line"><strong class="text-amber-900">Konu Bölümü Açıklaması:</strong> ${escapeHtml(card.explanation)}</p>
+        `;
+        cardsList.appendChild(item);
+      });
+    }
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    // ================= EVENT LISTENERS & BAŞLATMA =================
+    function initApp() {
+      loadState();
+      refreshGlobalStatsAndSelectors();
+      rebuildStudyDeck(true);
+      // Sekme geçişleri
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+      // Üstteki Bilemediklerim rozetine tıklayınca Bilemediklerim sekmesine git
+      document.getElementById('quickMissedBadgeBtn').addEventListener('click', () => switchTab('missed'));
+      // Çalışma Modu Filtreleri
+      document.getElementById('studyCourseFilter').addEventListener('change', () => {
+        updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+        rebuildStudyDeck(true);
+      });
+      document.getElementById('studyTopicFilter').addEventListener('change', () => rebuildStudyDeck(true));
+      document.getElementById('studyStatusFilter').addEventListener('change', () => rebuildStudyDeck(true));
+      document.getElementById('shuffleDeckBtn').addEventListener('click', () => {
+        for (let i = state.studyDeckIds.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [state.studyDeckIds[i], state.studyDeckIds[j]] = [state.studyDeckIds[j], state.studyDeckIds[i]];
+        }
+        state.currentCardIndex = 0;
+        state.isBackRevealed = false;
+        renderCurrentStudyCard();
+        showToast('Çalışma destesi karıştırıldı.', 'info');
+      });
+      document.getElementById('studyOnlyMissedQuickBtn').addEventListener('click', () => {
+        document.getElementById('studyStatusFilter').value = 'MISSED';
+        rebuildStudyDeck(true);
+      });
+      document.getElementById('emptyResetFilterBtn').addEventListener('click', () => {
+        document.getElementById('studyCourseFilter').value = 'ALL';
+        updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+        document.getElementById('studyStatusFilter').value = 'ALL';
+        rebuildStudyDeck(true);
+      });
+      document.getElementById('emptyGoPdfBtn').addEventListener('click', () => switchTab('pdf'));
+      // Kart Çevirme ve Değerlendirme
+      document.getElementById('revealAnswerBtn').addEventListener('click', revealCurrentCardAnswer);
+      document.getElementById('rateMissedBtn').addEventListener('click', () => rateCurrentCard('missed'));
+      document.getElementById('rateHardBtn').addEventListener('click', () => rateCurrentCard('hard'));
+      document.getElementById('rateGoodBtn').addEventListener('click', () => rateCurrentCard('mastered'));
+      document.getElementById('prevCardBtn').addEventListener('click', () => {
+        if (state.studyDeckIds.length === 0) return;
+        state.currentCardIndex = (state.currentCardIndex - 1 + state.studyDeckIds.length) % state.studyDeckIds.length;
+        state.isBackRevealed = false;
+        renderCurrentStudyCard();
+      });
+      document.getElementById('nextCardBtn').addEventListener('click', () => {
+        if (state.studyDeckIds.length === 0) return;
+        state.currentCardIndex = (state.currentCardIndex + 1) % state.studyDeckIds.length;
+        state.isBackRevealed = false;
+        renderCurrentStudyCard();
+      });
+      // Aktif Kartı Düzenle
+      document.getElementById('editCurrentCardBtn').addEventListener('click', () => {
+        if (state.studyDeckIds.length === 0) return;
+        const cardId = state.studyDeckIds[state.currentCardIndex];
+        openEditCardInManualTab(cardId);
+      });
+      // Klavye Kısayolları (Boşluk, 1, 2, 3, Sağ/Sol Ok)
+      window.addEventListener('keydown', (e) => {
+        if (state.activeTab !== 'study') return;
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (!state.isBackRevealed) revealCurrentCardAnswer();
+        } else if (e.key === '1' && state.isBackRevealed) {
+          rateCurrentCard('missed');
+        } else if (e.key === '2' && state.isBackRevealed) {
+          rateCurrentCard('hard');
+        } else if (e.key === '3' && state.isBackRevealed) {
+          rateCurrentCard('mastered');
+        } else if (e.code === 'ArrowRight') {
+          document.getElementById('nextCardBtn').click();
+        } else if (e.code === 'ArrowLeft') {
+          document.getElementById('prevCardBtn').click();
+        }
+      });
+      // PDF Sekmesi Kontrolleri
+      document.getElementById('pdfNewCourseToggleBtn').addEventListener('click', () => {
+        document.getElementById('pdfNewCourseBox').classList.toggle('hidden');
+      });
+      document.getElementById('pdfSaveNewCourseBtn').addEventListener('click', () => {
+        const val = document.getElementById('pdfNewCourseInput').value.trim();
+        if (!val) return;
+        if (!state.courses.includes(val)) {
+          state.courses.push(val);
+          saveState();
+          refreshGlobalStatsAndSelectors();
+        }
+        document.getElementById('pdfCourseSelect').value = val;
+        document.getElementById('pdfNewCourseInput').value = '';
+        document.getElementById('pdfNewCourseBox').classList.add('hidden');
+        showToast(`"${val}" dersi eklendi.`, 'success');
+      });
+      const pdfPickerModal = document.getElementById('pdfPickerModal');
+      const openPdfPickerModal = () => {
+        pdfPickerModal.classList.remove('hidden');
+        pdfPickerModal.classList.add('flex');
+      };
+      const closePdfPickerModal = () => {
+        pdfPickerModal.classList.add('hidden');
+        pdfPickerModal.classList.remove('flex');
+      };
+      // Dosya seçiciyi yalnızca kullanıcının görünür kontrole dokunmasıyla aç.
+      // WebView/Chrome'da window.blur zamanlaması güvenilir olmadığından engellendi uyarısı üretme.
+      document.getElementById('triggerPdfUploadBtn').addEventListener('click', () => {
+        openPdfPickerModal();
+      });
+      document.getElementById('closePdfPickerModalBtn').addEventListener('click', closePdfPickerModal);
+
+      const onCourseFileInputChange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return; // Kullanıcı seçiciyi iptal etti; uygulama durumunu değiştirme.
+        const alertEl = document.getElementById('webviewFileBlockedAlert');
+        if (alertEl) alertEl.classList.add('hidden');
+        closePdfPickerModal();
+        Promise.resolve(handlePdfFileSelected(file)).catch((err) => {
+          console.error('Dosya işleme hatası:', err);
+          showToast('Dosya işlenemedi. Dosya biçimini ve bütünlüğünü kontrol edin.', 'danger');
+        }).finally(() => {
+          e.target.value = '';
+        });
+      };
+      document.getElementById('pdfFileInput').addEventListener('change', onCourseFileInputChange);
+      document.getElementById('modalNativeFileInput').addEventListener('change', onCourseFileInputChange);
+      // İptal olayı bazı tarayıcılarda vardır; uyarı göstermek yerine sessizce sıfırla.
+      ['pdfFileInput', 'modalNativeFileInput'].forEach((id) => {
+        const input = document.getElementById(id);
+        input.addEventListener('cancel', () => { input.value = ''; });
+      });
+
+      document.getElementById('modalPasteClipboardBtn').addEventListener('click', async () => {
+        const modalTxt = document.getElementById('modalDirectTextInput');
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            const clip = await navigator.clipboard.readText();
+            if (clip && clip.trim()) {
+              modalTxt.value = clip.trim();
+              showToast('Panodaki metin kutuya yapıştırıldı!', 'success');
+              return;
+            }
+          }
+        } catch (err) {}
+        modalTxt.focus();
+        showToast('Metin kutusuna basılı tutup "Yapıştır"a dokunun.', 'info');
+      });
+      document.getElementById('modalApplyTextAndGenerateBtn').addEventListener('click', () => {
+        const modalTxt = document.getElementById('modalDirectTextInput').value.trim();
+        if (!modalTxt) {
+          showToast('Lütfen önce metin kutusuna PDF ders metninizi yapıştırın.', 'danger');
+          return;
+        }
+        document.getElementById('pdfRawTextInput').value = modalTxt;
+        closePdfPickerModal();
+        document.getElementById('generateCardsFromPdfBtn').click();
+      });
+      // Sürükle-Bırak Desteği
+      const dropZone = document.getElementById('pdfDropZone');
+      if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.classList.add('border-indigo-600', 'bg-indigo-100/60');
+        });
+        dropZone.addEventListener('dragleave', () => {
+          dropZone.classList.remove('border-indigo-600', 'bg-indigo-100/60');
+        });
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('border-indigo-600', 'bg-indigo-100/60');
+          const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) handlePdfFileSelected(file);
+        });
+      }
+      // Panodan Metin Yapıştır Butonu
+      document.getElementById('pasteClipboardTextBtn').addEventListener('click', async () => {
+        const rawTextarea = document.getElementById('pdfRawTextInput');
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            const clipText = await navigator.clipboard.readText();
+            if (clipText && clipText.trim()) {
+              rawTextarea.value = clipText.trim();
+              showToast('Panodaki ders metni başarıyla yapıştırıldı!', 'success');
+              return;
+            }
+          }
+        } catch (err) {
+          // Clipboard API izin vermezse metin kutusuna odakla
+        }
+        rawTextarea.focus();
+        showToast('Sağdaki metin kutusuna basılı tutup "Yapıştır" seçeneğine dokunun.', 'info');
+      });
+      // Hazır GK-GY PDF Ders Notu Seçici
+      const GKGY_PRESETS = {
+        TARIH_INKILAP: {
+          course: 'Tarih',
+          topic: 'Kurtuluş Savaşı Hazırlık Dönemi ve Kongreler',
+          text: `=== [PDF Sayfa 1] ===KURTULUŞ SAVAŞI HAZIRLIK DÖNEMİ GENELGELER VE KONGRELER Havza Genelgesi (28 Mayıs 1919): Mustafa Kemal Paşa tarafından tek başına yayımlanan ilk ulusal genelgedir. İşgallere karşı protesto mitingleri düzenlenmesi ve İtilaf Devletleri temsilciliklerine telgraflar çekilmesi istenmiştir.Amasya Genelgesi (22 Haziran 1919): Cevat Abbas tarafından kaleme alınmıştır. Vatanın bütünlüğü ve milletin bağımsızlığı tehlikededir ifadesiyle Kurtuluş Savaşı'nın gerekçesi belirtilmiştir. Milletin bağımsızlığını yine milletin azim ve kararı kurtaracaktır maddesiyle mücadelenin amacı ve yöntemi ilk kez açıklanmıştır.Erzurum Kongresi (23 Temmuz - 7 Ağustos 1919): Doğu Anadolu Müdafaa-i Hukuk Cemiyeti tarafından toplanmıştır. Milli sınırlar içinde vatan bir bütündür, parçalanamaz ilkesi ilk kez kabul edilmiştir. Manda ve himaye ilk kez reddedilmiştir.Sivas Kongresi (4 - 11 Eylül 1919): Toplanış ve aldığı kararlar bakımından ulusal tek kongredir.Tüm milli cemiyetler Anadolu ve Rumeli Müdafaa-i Hukuk Cemiyeti adı altında birleştirilmiştir.Manda ve himaye kesin olarak reddedilmiştir. İrade-i Milliye gazetesi çıkarılmıştır.`
+        },
+        TARIH_OSMANLI: {
+          course: 'Tarih',
+          topic: 'Osmanlı Kültür ve Medeniyeti - Devlet Yönetimi',
+          text: `=== [PDF Sayfa 1] ===OSMANLI DEVLET YÖNETİMİ VE DİVAN-I HÜMAYUN Divan-ı Hümayun: Orhan Bey döneminde kurulmuş, II. Mahmut döneminde kaldırılarak yerine Nazırlıklar (Bakanlıklar) kurulmuştur. Fatih Sultan Mehmet dönemine kadar Divan toplantılarına padişahlar başkanlık ederken, Fatih'ten itibaren Sadrazamlar başkanlık etmeye başlamıştır.Seyfiye (Ehl-i Örf) Sınıfı: Yönetim ve askerlik işlerinden sorumlu sınıftır. Temsilcileri Sadrazam, Vezirler, Kaptan-ı Derya, Yeniçeri Ağası ve Beylerbeyidir.İlmiye (Ehl-i Şer) Sınıfı: Din, eğitim ve hukuk işlerinden sorumlu sınıftır. Temsilcileri Şeyhülislam, Kazasker, Kadı ve Müderrislerdir.Kalemiye (Ehl-i Kalem) Sınıfı: Bürokrasi ve maliye işlerinden sorumlu sınıftır. Temsilcileri Defterdar, Nişancı ve Reisülküttaptır.`
+        },
+        COGRAFYA_IKLIM: {
+          course: 'Coğrafya',
+          topic: 'Türkiye İklimi ve Yer Şekilleri',
+          text: `=== [PDF Sayfa 1] ===TÜRKİYE'DE İKLİM TİPLERİ VE YAĞIŞ ÖZELLİKLERİ Karadeniz İklimi: Her mevsim yağışlıdır. En fazla yağışı sonbaharda, en az yağışı ilkbaharda alır. Yağış rejimi düzenlidir ve yıllık sıcaklık farkı en az olan iklimdir. Doğal bitki örtüsü karışık yapraklı ormanlardır.Akdeniz İklimi: Yazlar sıcak ve kurak, kışlar ılık ve yağışlıdır. En fazla yağışı kış mevsiminde alır ve cephesel (frontal) yağışlar görülür. Doğal bitki örtüsü kızılçam ormanları ve makidir.Karasal İklim (Step): En fazla yağışı ilkbaharda konveksiyonel (yükselim) yağışlar şeklinde alır.Doğal bitki örtüsü ilkbaharda yeşeren, yazın sararan bozkır (step) bitki örtüsüdür.Sert Karasal İklim: Erzurum-Kars-Ardahan platosunda görülür. En fazla yağışı yaz mevsiminde alır. Doğal bitki örtüsü dağ çayırlarıdır ve altında Çernezyom (kara) topraklar gelişmiştir.`
+        },
+        VATANDASLIK_YURUTME: {
+          course: 'Vatandaşlık (Anayasa)',
+          topic: '1982 Anayasası Temel İlkeler ve Yürütme',
+          text: `=== [PDF Sayfa 1] ===1982 ANAYASASI TEMEL İLKELER VE DEĞİŞTİRİLEMEZ HÜKÜMLER Devletin Şekli: Türkiye Devleti bir Cumhuriyettir.Cumhuriyetin Nitelikleri: Türkiye Cumhuriyeti, toplumun huzuru, milli dayanışma ve adalet anlayışı içinde, insan haklarına saygılı, Atatürk milliyetçiliğine bağlı, başlangıçta belirtilen temel ilkelere dayanan, demokratik, laik ve sosyal bir hukuk Devletidir.YÜRÜTME YETKİSİ VE CUMHURBAŞKANI SEÇİMİ Cumhurbaşkanı Adaylık Şartları: Cumhurbaşkanı, kırk yaşını doldurmuş, yükseköğrenim yapmış, milletvekili seçilme yeterliliğine sahip Türk vatandaşları arasından, doğrudan halk tarafından seçilir.Cumhurbaşkanının görev süresi 5 yıldır ve bir kimse en fazla 2 defa Cumhurbaşkanı seçilebilir.Cumhurbaşkanlığına, siyasi parti grupları, en son yapılan genel seçimlerde toplam geçerli oyların tek başına veya birlikte en az %5'ini almış olan siyasi partiler ile en az 100.000 seçmen aday gösterebilir.`
+        },
+        TURKCE_DILBILGISI: {
+          course: 'Türkçe',
+          topic: 'Ses Bilgisi ve Sözcükte Yapı',
+          text: `=== [PDF Sayfa 1] ===TÜRKÇE SES BİLGİSİ VE SÖZCÜKTE YAPI KURALLARI Ünsüz Benzeşmesi (Sertleşmesi): Türkçede sert ünsüzlerle (f, s, t, k, ç, ş, h, p) biten bir sözcüğe yumuşak ünsüzlerden c, d, g ile başlayan bir ek geldiğinde ekin başındaki ünsüz sertleşerek ç, t, k olur.Ünsüz Yumuşaması (Değişimi): Süreksiz sert ünsüzlerle (p, ç, t, k) biten bir sözcüğe ünlü ile başlayan bir ek geldiğinde bu ünsüzler yumuşayarak b, c, d, g veya ğ seslerine dönüşür. Tek heceli sözcüklerin çoğunda ve yabancı kökenli bazı sözcüklerde ünsüz yumuşamasına aykırılık görülür.Ünlü Düşmesi (Hece Düşmesi): İkinci hecesinde dar ünlü (ı, i, u, ü) bulunan iki heceli sözcüklere ünlü ile başlayan bir ek getirildiğinde ikinci hecedeki dar ünlü düşer.`
+        },
+        MATEMATIK_SAYILAR: {
+          course: 'Matematik',
+          topic: 'Temel Kavramlar ve Bölünebilme Kuralları',
+          text: `=== [PDF Sayfa 1] ===TEMEL KAVRAMLAR VE BÖLÜNEBİLME KURALLARI Asal Sayılar: Sadece 1'e ve kendisine kalansız bölünebilen 1'den büyük doğal sayılara asal sayı denir. En küçük asal sayı 2'dir ve çift olan tek asal sayı 2'dir.Aralarında Asal Sayılar: 1'den başka pozitif ortak böleni olmayan pozitif tam sayılara aralarında asal sayılar denir. 1 ile bütün pozitif tam sayılar aralarında asaldır. Ardışık iki doğal sayı ve ardışık iki tek doğal sayı daima aralarında asaldır.Bölünebilme Kuralları: Rakamları toplamı 3'ün katı olan sayılar 3 ile, rakamları toplamı 9'un katı olan sayılar 9 ile tam bölünür. Bir sayının son iki basamağı 4'ün katı veya 00 ise sayı 4 ile tam bölünür.`
+        }
+      };
+      const applyPresetByKey = (key, autoGenerate = false) => {
+        if (!key || !GKGY_PRESETS[key]) return;
+        const preset = GKGY_PRESETS[key];
+        document.getElementById('pdfCourseSelect').value = preset.course;
+        document.getElementById('pdfTopicInput').value = preset.topic;
+        document.getElementById('pdfRawTextInput').value = preset.text;
+        if (autoGenerate) {
+          closePdfPickerModal();
+          document.getElementById('generateCardsFromPdfBtn').click();
+        } else {
+          showToast(`${preset.course} - ${preset.topic} metni yüklendi! "Kartları Oluştur ve Kaydet" butonuna basabilirsiniz.`, 'success');
+        }
+      };
+      document.getElementById('quickGkGyPresetSelect').addEventListener('change', (e) => {
+        applyPresetByKey(e.target.value, false);
+      });
+      document.querySelectorAll('.modal-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyPresetByKey(btn.getAttribute('data-modal-preset'), true);
+        });
+      });
+      document.getElementById('clearPdfTextBtn').addEventListener('click', () => {
+        document.getElementById('pdfRawTextInput').value = '';
+      });
+      // Örnek KPSS Ders Metni Doldurma
+      document.getElementById('loadSampleKpssPdfTextBtn').addEventListener('click', () => {
+        document.getElementById('pdfCourseSelect').value = 'Vatandaşlık (Anayasa)';
+        document.getElementById('pdfTopicInput').value = '1982 Anayasası Temel İlkeler ve Yürütme';
+        document.getElementById('pdfRawTextInput').value =`=== [PDF Sayfa 1] ===1982 ANAYASASI TEMEL İLKELER VE DEĞİŞTİRİLEMEZ HÜKÜMLER Devletin Şekli: Türkiye Devleti bir Cumhuriyettir.Cumhuriyetin Nitelikleri: Türkiye Cumhuriyeti, toplumun huzuru, milli dayanışma ve adalet anlayışı içinde, insan haklarına saygılı, Atatürk milliyetçiliğine bağlı, başlangıçta belirtilen temel ilkelere dayanan, demokratik, laik ve sosyal bir hukuk Devletidir.Değiştirilemeyecek Hükümler: Anayasanın 1. maddesindeki Devletin şeklinin Cumhuriyet olduğu hakkındaki hüküm ile, 2. maddesindeki Cumhuriyetin nitelikleri ve 3. maddesi hükümleri değiştirilemez ve değiştirilmesi teklif dahi edilemez.=== [PDF Sayfa 2] ===YÜRÜTME YETKİSİ VE CUMHURBAŞKANI SEÇİMİ Yürütme yetkisi ve görevi, Cumhurbaşkanı tarafından, Anayasaya ve kanunlara uygun olarak kullanılır ve yerine getirilir.Cumhurbaşkanı Adaylık Şartları: Cumhurbaşkanı, kırk yaşını doldurmuş, yükseköğrenim yapmış, milletvekili seçilme yeterliliğine sahip Türk vatandaşları arasından, doğrudan halk tarafından seçilir.Cumhurbaşkanının görev süresi 5 yıldır ve bir kimse en fazla 2 defa Cumhurbaşkanı seçilebilir.Cumhurbaşkanlığına, siyasi parti grupları, en son yapılan genel seçimlerde toplam geçerli oyların tek başına veya birlikte en az %5'ini almış olan siyasi partiler ile en az 100.000 seçmen aday gösterebilir.`;
+        showToast('Örnek KPSS Anayasa PDF metni yüklendi. Şimdi kartları oluşturabilirsiniz!','info');
+      });
+      // PDF'den Kartları Üret ve Kaydet
+      let lastGeneratedTopic = null;
+      document.getElementById('generateCardsFromPdfBtn').addEventListener('click', () => {
+        const courseName = document.getElementById('pdfCourseSelect').value || 'Genel Ders';
+        const topicName = document.getElementById('pdfTopicInput').value.trim() || 'Genel Konu';
+        const rawText = document.getElementById('pdfRawTextInput').value.trim();
+        const mode = document.getElementById('pdfDetailModeSelect').value;
+        if (!rawText) {
+          showToast('Lütfen önce bir PDF dosyası seçin veya ders metnini yapıştırın.', 'danger');
+          return;
+        }
+        const analysis = generateCardsByDetectedTopics(rawText, courseName, topicName, mode);
+        const newCards = analysis.cards;
+        if (newCards.length === 0) {
+          showToast('Metinden soru çıkarılamadı. Lütfen en az bir tam cümle içeren ders metni girin.', 'danger');
+          return;
+        }
+        state.cards.unshift(...newCards);
+        saveState();
+        refreshGlobalStatsAndSelectors();
+        lastGeneratedTopic = { course: courseName, topic: topicName };
+        // Önizleme panelini göster
+        const previewPanel = document.getElementById('pdfGeneratedPreviewPanel');
+        const previewTitle = document.getElementById('pdfPreviewTitle');
+        const previewList = document.getElementById('pdfGeneratedListContainer');
+        previewPanel.classList.remove('hidden');
+        previewTitle.textContent = `${courseName} / ${analysis.groups.length} ana ünite / ${newCards.length} kart oluşturuldu ve kaydedildi`;
+        previewList.innerHTML = '';
+        newCards.forEach((c, idx) => {
+          const item = document.createElement('div');
+          item.className = 'p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5 text-xs';
+          item.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] font-bold text-indigo-700">
+              <span>Kart #${idx + 1} (${escapeHtml(c.source)})</span>
+              <span>Tam Kapsam</span>
+            </div>
+            <div class="font-bold text-slate-900">Soru: ${escapeHtml(c.question)}</div>
+            <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950 font-semibold">Cevap: ${escapeHtml(c.answer)}</div>
+            <div class="p-2 rounded-lg bg-amber-50 border border-amber-200 text-slate-700 whitespace-pre-line"><strong>Konu Bölümü Açıklaması:</strong>\n${escapeHtml(c.explanation)}</div>
+          `;
+          previewList.appendChild(item);
+        });
+        showToast(`${analysis.groups.length} ana ünite altında ${newCards.length} kart oluşturuldu. Başlık tespitini ve belirsiz sayfaları kontrol edin.`,'success');
+      });
+      document.getElementById('startStudyGeneratedBtn').addEventListener('click', () => {
+        if (lastGeneratedTopic) {
+          document.getElementById('studyCourseFilter').value = lastGeneratedTopic.course;
+          updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+          document.getElementById('studyTopicFilter').value = lastGeneratedTopic.topic;
+          document.getElementById('studyStatusFilter').value = 'ALL';
+        }
+        switchTab('study');
+      });
+      // Bilemediklerim Sekmesi Etkileşimleri
+      document.getElementById('practiceAllMissedBtn').addEventListener('click', () => {
+        document.getElementById('studyCourseFilter').value = 'ALL';
+        updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+        document.getElementById('studyStatusFilter').value = 'MISSED';
+        switchTab('study');
+      });
+      document.getElementById('missedCourseFilter').addEventListener('change', renderMissedTab);
+      document.getElementById('tab-missed').addEventListener('click', (e) => {
+        const markBtn = e.target.closest('.mark-learned-btn');
+        if (markBtn) {
+          const id = markBtn.getAttribute('data-mark-learned-id');
+          const card = state.cards.find(c => c.id === id);
+          if (card) {
+            card.status = 'mastered';
+            card.correctCount = (card.correctCount || 0) + 1;
+            saveState();
+            refreshGlobalStatsAndSelectors();
+            renderMissedTab();
+            showToast('Kart öğrenildi olarak işaretlendi ve Bilemediklerimden çıkarıldı.', 'success');
+          }
+          return;
+        }
+        const topicBtn = e.target.closest('.topic-quick-study-btn');
+        if (topicBtn) {
+          const cName = topicBtn.getAttribute('data-study-course');
+          const tName = topicBtn.getAttribute('data-study-topic');
+          const onlyMissed = topicBtn.getAttribute('data-study-only-missed') === '1';
+          document.getElementById('studyCourseFilter').value = cName;
+          updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+          document.getElementById('studyTopicFilter').value = tName;
+          document.getElementById('studyStatusFilter').value = onlyMissed ? 'MISSED' : 'ALL';
+          switchTab('study');
+        }
+      });
+      // Manuel Kart Ekleme ve Düzenleme Formu
+      document.getElementById('manualCardForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const editId = document.getElementById('editingCardIdInput').value;
+        const course = document.getElementById('manualCourseSelect').value;
+        const topic = document.getElementById('manualTopicInput').value.trim();
+        const question = document.getElementById('manualQuestionInput').value.trim();
+        const answer = document.getElementById('manualAnswerInput').value.trim();
+        const explanation = document.getElementById('manualExplanationInput').value.trim();
+        if (!topic || !question || !answer || !explanation) return;
+        if (editId) {
+          const existing = state.cards.find(c => c.id === editId);
+          if (existing) {
+            existing.course = course;
+            existing.topic = topic;
+            existing.question = question;
+            existing.answer = answer;
+            existing.explanation = explanation;
+            showToast('Kart başarıyla güncellendi.', 'success');
+          }
+        } else {
+          state.cards.unshift({
+            id: 'manual-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            course,
+            topic,
+            question,
+            answer,
+            explanation,
+            source: 'Manuel Eklenen Kart',
+            status: 'unseen',
+            missedCount: 0,
+            correctCount: 0,
+            createdAt: Date.now()
+          });
+          showToast('Manuel kart eklendi ve kaydedildi.', 'success');
+        }
+        resetManualForm();
+        saveState();
+        refreshGlobalStatsAndSelectors();
+      });
+      document.getElementById('cancelEditCardBtn').addEventListener('click', () => {
+        resetManualForm();
+        switchTab('study');
+      });
+      // Arşiv Sekmesi Etkileşimleri
+      document.getElementById('libraryAddCourseBtn').addEventListener('click', () => {
+        const input = document.getElementById('libraryNewCourseInput');
+        const val = input.value.trim();
+        if (!val) return;
+        if (!state.courses.includes(val)) {
+          state.courses.push(val);
+          saveState();
+          refreshGlobalStatsAndSelectors();
+          renderLibraryTab();
+          showToast(`"${val}" dersi eklendi.`, 'success');
+        }
+        input.value = '';
+      });
+      document.getElementById('librarySearchInput').addEventListener('input', renderLibraryTab);
+      document.getElementById('libraryCourseFilter').addEventListener('change', () => {
+        updateTopicSelectForCourse('libraryCourseFilter', 'libraryTopicFilter');
+        renderLibraryTab();
+      });
+      document.getElementById('libraryTopicFilter').addEventListener('change', renderLibraryTab);
+      document.getElementById('tab-library').addEventListener('click', (e) => {
+        const filterBtn = e.target.closest('.lib-course-filter-btn');
+        if (filterBtn) {
+          const c = filterBtn.getAttribute('data-filter-course-lib');
+          document.getElementById('libraryCourseFilter').value = c;
+          updateTopicSelectForCourse('libraryCourseFilter', 'libraryTopicFilter');
+          renderLibraryTab();
+          return;
+        }
+        const studyBtn = e.target.closest('.lib-course-study-btn');
+        if (studyBtn) {
+          const c = studyBtn.getAttribute('data-study-course-direct');
+          document.getElementById('studyCourseFilter').value = c;
+          updateTopicSelectForCourse('studyCourseFilter', 'studyTopicFilter');
+          document.getElementById('studyTopicFilter').value = 'ALL';
+          document.getElementById('studyStatusFilter').value = 'ALL';
+          switchTab('study');
+          return;
+        }
+        const editBtn = e.target.closest('.lib-edit-card-btn');
+        if (editBtn) {
+          openEditCardInManualTab(editBtn.getAttribute('data-edit-card-id'));
+          return;
+        }
+        const delBtn = e.target.closest('.lib-delete-card-btn');
+        if (delBtn) {
+          const id = delBtn.getAttribute('data-delete-card-id');
+          state.cards = state.cards.filter(c => c.id !== id);
+          saveState();
+          refreshGlobalStatsAndSelectors();
+          renderLibraryTab();
+          showToast('Kart silindi.', 'info');
+        }
+      });
+      // Yedekleme Modalı
+      const backupModal = document.getElementById('backupModal');
+      document.getElementById('backupModalBtn').addEventListener('click', () => {
+        backupModal.classList.remove('hidden');
+        backupModal.classList.add('flex');
+      });
+      document.getElementById('closeBackupModalBtn').addEventListener('click', () => {
+        backupModal.classList.add('hidden');
+        backupModal.classList.remove('flex');
+      });
+      document.getElementById('exportJsonBtn').addEventListener('click', () => {
+        const dataStr = JSON.stringify({ courses: state.courses, cards: state.cards }, null, 2);
+        const fileName = `kpss_anki_yedek_${new Date().toISOString().slice(0, 10)}.json`;
+        if (window.AndroidBridge && typeof window.AndroidBridge.saveTextFile === 'function') {
+          try {
+            window.AndroidBridge.saveTextFile(fileName, btoa(unescape(encodeURIComponent(dataStr))));
+            showToast('Yedek dosyası İndirilenler klasörüne kaydedildi.', 'success');
+            return;
+          } catch (err) { console.error('Android yedek kaydı:', err); }
+        }
+        const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        showToast('Yedek dosyası indirilmeye hazır.', 'success');
+      });
+      document.getElementById('importJsonInput').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+          const text = (typeof file.text === 'function')
+            ? await file.text()
+            : await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file, 'UTF-8');
+              });
+          const parsed = JSON.parse(text);
+          if (!parsed || !Array.isArray(parsed.cards)) throw new Error('Yedek dosyasında kart listesi bulunamadı.');
+          state.cards = parsed.cards;
+          if (Array.isArray(parsed.courses)) state.courses = parsed.courses;
+          saveState();
+          refreshGlobalStatsAndSelectors();
+          rebuildStudyDeck(true);
+          backupModal.classList.add('hidden');
+          backupModal.classList.remove('flex');
+          showToast(`${state.cards.length} kart başarıyla geri yüklendi!`, 'success');
+        } catch (err) {
+          showToast('Geçersiz veya bozuk yedek dosyası.', 'danger');
+        } finally {
+          e.target.value = '';
+        }
+      });
+    }
+    function openEditCardInManualTab(cardId) {
+      const card = state.cards.find(c => c.id === cardId);
+      if (!card) return;
+      switchTab('manual');
+      document.getElementById('editingCardIdInput').value = card.id;
+      document.getElementById('manualFormHeading').textContent = 'Mevcut Kartı Düzenle';
+      document.getElementById('manualCourseSelect').value = card.course;
+      document.getElementById('manualTopicInput').value = card.topic;
+      document.getElementById('manualQuestionInput').value = card.question;
+      document.getElementById('manualAnswerInput').value = card.answer;
+      document.getElementById('manualExplanationInput').value = card.explanation;
+      document.getElementById('saveManualCardBtn').textContent = 'Değişiklikleri Kaydet';
+      document.getElementById('cancelEditCardBtn').classList.remove('hidden');
+    }
+    function resetManualForm() {
+      document.getElementById('editingCardIdInput').value = '';
+      document.getElementById('manualFormHeading').textContent = 'Manuel Soru-Cevap ve Konu Açıklaması Kartı Ekle';
+      document.getElementById('manualQuestionInput').value = '';
+      document.getElementById('manualAnswerInput').value = '';
+      document.getElementById('manualExplanationInput').value = '';
+      document.getElementById('saveManualCardBtn').textContent = 'Kartı Kaydet';
+      document.getElementById('cancelEditCardBtn').classList.add('hidden');
+    }
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

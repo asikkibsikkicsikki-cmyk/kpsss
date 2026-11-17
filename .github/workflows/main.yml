@@ -17,32 +17,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. GitHub deposundaki dosyaları indir
       - name: Kaynak kodunu indir
         uses: actions/checkout@v4
 
+      # 2. Java 17 kur
       - name: Java 17 kur
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-       - name: Android SDK kur
-  uses: android-actions/setup-android@v4
-  with:
-    packages: 'platform-tools'
+
+      # 3. Android SDK kur
+      # ÖNEMLİ: Eski "tools" paketi kullanılmıyor.
+      - name: Android SDK kur
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      # 4. Gerekli Android 35 bileşenlerini kur
+      - name: Android SDK 35 bileşenlerini kur
         run: |
-          sdkmanager "platform-tools" \
-                     "platforms;android-35" \
-                     "build-tools;35.0.0"
-       - name: Gradle 8.7 kur
+          sdkmanager --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      # 5. Gradle 8.7 kur
+      - name: Gradle 8.7 kur
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
+      # 6. Android proje klasörünü bul
       - name: Android proje klasörünü bul
         shell: bash
         run: |
           ANDROID_DIR=""
 
+          # Önce depodaki hazır klasörleri kontrol et
           if [ -f "android/settings.gradle" ] && [ -f "android/app/build.gradle" ]; then
             ANDROID_DIR="android"
 
@@ -53,30 +65,60 @@ jobs:
             ANDROID_DIR="."
 
           else
-            ZIP_FILE=$(find . -maxdepth 3 -type f -iname "*.zip" | head -n 1)
+            echo "Hazır Android klasörü bulunamadı. ZIP dosyaları aranıyor..."
+
+            ZIP_FILE=$(find . -type f -iname "*.zip" \
+              -not -path "./.git/*" | head -n 1)
 
             if [ -n "$ZIP_FILE" ]; then
               mkdir -p _android_source
               unzip -q "$ZIP_FILE" -d _android_source
+            fi
 
-              if [ -f "_android_source/KPSS_Anki_Studio_Package/android/settings.gradle" ]; then
-                ANDROID_DIR="_android_source/KPSS_Anki_Studio_Package/android"
+            # ZIP çıkarıldıktan sonra Gradle projesini bul
+            SETTINGS_FILE=$(find . -type f -name "settings.gradle" \
+              -not -path "./.git/*" \
+              -not -path "./.gradle/*" | head -n 1)
+
+            if [ -n "$SETTINGS_FILE" ]; then
+              CANDIDATE_DIR=$(dirname "$SETTINGS_FILE")
+
+              if [ -f "$CANDIDATE_DIR/app/build.gradle" ]; then
+                ANDROID_DIR="$CANDIDATE_DIR"
               fi
             fi
           fi
 
+          # Proje bulunamadıysa işlemi durdur
           if [ -z "$ANDROID_DIR" ]; then
-            echo "HATA: Android Gradle projesi bulunamadı."
+            echo "::error::Android Gradle projesi bulunamadı."
+            echo "settings.gradle ve app/build.gradle dosyalarını kontrol edin."
             exit 1
           fi
 
           echo "ANDROID_DIR=$ANDROID_DIR" >> "$GITHUB_ENV"
-          echo "Bulunan proje: $ANDROID_DIR"
+          echo "Android proje klasörü bulundu: $ANDROID_DIR"
 
+      # 7. Android APK oluştur
       - name: APK derle
         run: gradle --no-daemon --stacktrace assembleDebug
         working-directory: ${{ env.ANDROID_DIR }}
 
+      # 8. APK dosyasının varlığını kontrol et
+      - name: APK dosyasını kontrol et
+        shell: bash
+        run: |
+          APK_PATH="${ANDROID_DIR}/app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -f "$APK_PATH" ]; then
+            echo "::error::APK dosyası oluşturulamadı: $APK_PATH"
+            exit 1
+          fi
+
+          echo "APK başarıyla oluşturuldu."
+          ls -lh "$APK_PATH"
+
+      # 9. APK dosyasını indirilebilir hale getir
       - name: APK dosyasını yükle
         uses: actions/upload-artifact@v4
         with:
